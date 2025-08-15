@@ -28,6 +28,20 @@ type Organization struct {
 	// See POST enabled_connections endpoint for the object format.
 	// (Max of 10 connections allowed)
 	EnabledConnections []*OrganizationConnection `json:"enabled_connections,omitempty"`
+
+	// TokenQuota configuration, to configure quotas for token issuance for organizations.
+	// To unset values (set to null), use a PATCH request like this:
+	//
+	//
+	// PATCH /api/v2/organizations/{id}
+	//
+	// {
+	//	 "token_quota": null
+	// }
+	//
+	// For more details on making custom requests, refer to the Auth0 Go SDK examples:
+	// https://github.com/auth0/go-auth0/blob/main/EXAMPLES.md#providing-a-custom-user-struct
+	TokenQuota *TokenQuota `json:"token_quota,omitempty"`
 }
 
 // OrganizationBranding holds branding information for an Organization.
@@ -222,7 +236,7 @@ func (m *OrganizationManager) Create(ctx context.Context, o *Organization, opts 
 	return
 }
 
-// Get a specific organization.
+// Read retrieves a specific organization.
 //
 // See: https://auth0.com/docs/api/management/v2/#!/Organizations/get_organizations_by_id
 func (m *OrganizationManager) Read(ctx context.Context, id string, opts ...RequestOption) (o *Organization, err error) {
@@ -352,6 +366,7 @@ func (m *OrganizationManager) AddMembers(ctx context.Context, id string, memberI
 		Members: memberIDs,
 	}
 	err = m.management.Request(ctx, "POST", m.management.URI("organizations", id, "members"), &body, opts...)
+
 	return
 }
 
@@ -365,6 +380,7 @@ func (m *OrganizationManager) DeleteMembers(ctx context.Context, id string, memb
 		Members: memberIDs,
 	}
 	err = m.management.Request(ctx, "DELETE", m.management.URI("organizations", id, "members"), &body, opts...)
+
 	return
 }
 
@@ -388,6 +404,7 @@ func (m *OrganizationManager) AssignMemberRoles(ctx context.Context, id string, 
 		Roles: roles,
 	}
 	err = m.management.Request(ctx, "POST", m.management.URI("organizations", id, "members", memberID, "roles"), &body, opts...)
+
 	return
 }
 
@@ -401,6 +418,7 @@ func (m *OrganizationManager) DeleteMemberRoles(ctx context.Context, id string, 
 		Roles: roles,
 	}
 	err = m.management.Request(ctx, "DELETE", m.management.URI("organizations", id, "members", memberID, "roles"), &body, opts...)
+
 	return
 }
 
@@ -420,6 +438,7 @@ func (m *OrganizationManager) AssociateClientGrant(ctx context.Context, id strin
 		GrantID: grantID,
 	}
 	err = m.management.Request(ctx, "POST", m.management.URI("organizations", id, "client-grants"), &body, opts...)
+
 	return
 }
 

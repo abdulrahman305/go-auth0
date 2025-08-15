@@ -52,11 +52,29 @@ type LogStream struct {
 
 	// Sink for validation.
 	Sink interface{} `json:"-"`
+
+	// PIIConfig is used to configure the PII handling for the log stream.
+	PIIConfig *LogStreamPiiConfig `json:"pii_config,omitempty"`
+
+	// StartFrom is the optional datetime (ISO 8601) to start streaming logs from
+	StartFrom *string `json:"startFrom,omitempty"`
+}
+
+// LogStreamPiiConfig is used to configure the PII handling for the log stream.
+type LogStreamPiiConfig struct {
+	// LogFields is a list of fields that should be handled as PII.
+	// Allowed values: "first_name", "last_name", "username", "email", "phone", "address".
+	LogFields *[]string `json:"log_fields,omitempty"`
+	// Method is the method to use for handling PII. Can be "mask" or "hash".
+	Method *string `json:"method,omitempty"`
+	// Algorithm is the algorithm to use for hashing PII. Can be "xxhash".
+	Algorithm *string `json:"algorithm,omitempty"`
 }
 
 // MarshalJSON is a custom serializer for the LogStream type.
 func (ls *LogStream) MarshalJSON() ([]byte, error) {
 	type logStream LogStream
+
 	type logStreamWrapper struct {
 		*logStream
 		RawSink json.RawMessage `json:"sink,omitempty"`
@@ -69,6 +87,7 @@ func (ls *LogStream) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		w.RawSink = b
 	}
 
@@ -78,6 +97,7 @@ func (ls *LogStream) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON is a custom deserializer for the LogStream type.
 func (ls *LogStream) UnmarshalJSON(b []byte) error {
 	type logStream LogStream
+
 	type logStreamWrapper struct {
 		*logStream
 		RawSink json.RawMessage `json:"sink,omitempty"`

@@ -119,6 +119,9 @@ const (
 
 	// PromptCaptcha represents the captcha prompt.
 	PromptCaptcha PromptType = "captcha"
+
+	// PromptBruteForceProtection represents the brute-force-protection prompt.
+	PromptBruteForceProtection PromptType = "brute-force-protection"
 )
 
 var allowedPromptsWithPartials = []PromptType{
@@ -129,6 +132,7 @@ var allowedPromptsWithPartials = []PromptType{
 	PromptLoginID,
 	PromptLoginPassword,
 	PromptLoginPasswordLess,
+	PromptCustomizedConsent,
 }
 
 // PromptType defines the prompt that we are managing.
@@ -339,6 +343,9 @@ const (
 	// ScreenMFABeginEnrollOptions represents the mfa-begin-enroll-options screen.
 	ScreenMFABeginEnrollOptions ScreenName = "mfa-begin-enroll-options"
 
+	// ScreenMFARecoveryCodeChallengeNewCode represents the mfa-recovery-code-challenge-new-code screen.
+	ScreenMFARecoveryCodeChallengeNewCode ScreenName = "mfa-recovery-code-challenge-new-code"
+
 	// ScreenStatus represents the status screen.
 	ScreenStatus ScreenName = "status"
 
@@ -380,6 +387,15 @@ const (
 
 	// ScreenInterstitialCaptcha represents the interstitial-captcha screen.
 	ScreenInterstitialCaptcha ScreenName = "interstitial-captcha"
+
+	// ScreenBruteForceProtectionUnblock represents the brute-force-protection-unblock screen.
+	ScreenBruteForceProtectionUnblock ScreenName = "brute-force-protection-unblock"
+
+	// ScreenBruteForceProtectionUnblockFailure represents the brute-force-protection-unblock-failure.
+	ScreenBruteForceProtectionUnblockFailure ScreenName = "brute-force-protection-unblock-failure"
+
+	// ScreenBruteForceProtectionUnblockSuccess represents the brute-force-protection-unblock-success.
+	ScreenBruteForceProtectionUnblockSuccess ScreenName = "brute-force-protection-unblock-success"
 )
 
 const (
@@ -400,6 +416,9 @@ const (
 
 	// InsertionPointSecondaryActionsEnd represents the secondary-actions-end insertion point.
 	InsertionPointSecondaryActionsEnd InsertionPoint = "secondary-actions-end"
+
+	// InsertionPointFormContent represents the form-content insertion point.
+	InsertionPointFormContent InsertionPoint = "form-content"
 )
 
 // ScreenPartials is a map of insertion points to partials.
@@ -450,15 +469,47 @@ type PromptRendering struct {
 	ContextConfiguration    *[]string      `json:"context_configuration,omitempty"`
 	DefaultHeadTagsDisabled *bool          `json:"default_head_tags_disabled,omitempty"`
 	HeadTags                []interface{}  `json:"head_tags,omitempty"`
+	// Filters are optional filters to apply rendering rules to specific entities.
+	Filters *PromptRenderingFilters `json:"filters,omitempty"`
+	// UsePageTemplate indicates whether to use the page template with ACUL.
+	UsePageTemplate *bool `json:"use_page_template,omitempty"`
+}
+
+// PromptRenderingFilters is used to filter rendering rules based on specific entities.
+type PromptRenderingFilters struct {
+	// MatchType defines the type of match to apply.
+	MatchType *string `json:"match_type,omitempty"`
+	// Clients is a list of client filters.
+	Clients *[]PromptRenderingFilter `json:"clients,omitempty"`
+	// Organizations is a list of organization filters.
+	Organizations *[]PromptRenderingFilter `json:"organizations,omitempty"`
+	// Domains is a list of domain filters.
+	Domains *[]PromptRenderingFilter `json:"domains,omitempty"`
+}
+
+// PromptRenderingFilter is used to filter rendering rules based on specific entities.
+type PromptRenderingFilter struct {
+	// ID is the identifier of the entity.
+	ID *string `json:"id,omitempty"`
+	// Metadata is the metadata associated with the entity.
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+}
+
+// PromptRenderingList is a list of prompt rendering settings.
+type PromptRenderingList struct {
+	List
+	PromptRenderings []*PromptRendering `json:"configs"`
 }
 
 // MarshalJSON implements a custom [json.Marshaler].
 func (c *PromptRendering) MarshalJSON() ([]byte, error) {
 	type RenderingSubSet struct {
-		RenderingMode           *RenderingMode `json:"rendering_mode,omitempty"`
-		ContextConfiguration    *[]string      `json:"context_configuration,omitempty"`
-		DefaultHeadTagsDisabled *bool          `json:"default_head_tags_disabled,omitempty"`
-		HeadTags                []interface{}  `json:"head_tags,omitempty"`
+		RenderingMode           *RenderingMode          `json:"rendering_mode,omitempty"`
+		ContextConfiguration    *[]string               `json:"context_configuration,omitempty"`
+		DefaultHeadTagsDisabled *bool                   `json:"default_head_tags_disabled,omitempty"`
+		HeadTags                []interface{}           `json:"head_tags,omitempty"`
+		Filters                 *PromptRenderingFilters `json:"filters,omitempty"`
+		UsePageTemplate         *bool                   `json:"use_page_template,omitempty"`
 	}
 
 	return json.Marshal(&RenderingSubSet{
@@ -466,6 +517,8 @@ func (c *PromptRendering) MarshalJSON() ([]byte, error) {
 		ContextConfiguration:    c.ContextConfiguration,
 		DefaultHeadTagsDisabled: c.DefaultHeadTagsDisabled,
 		HeadTags:                c.HeadTags,
+		Filters:                 c.Filters,
+		UsePageTemplate:         c.UsePageTemplate,
 	})
 }
 
@@ -474,6 +527,7 @@ func (c *PromptPartials) MarshalJSON() ([]byte, error) {
 	body := map[string]PromptPartials{
 		string(c.Prompt): *c,
 	}
+
 	return json.Marshal(body)
 }
 
@@ -482,6 +536,7 @@ func (c *PromptPartials) UnmarshalJSON(data []byte) error {
 	var body map[string]struct {
 		PromptPartials
 	}
+
 	if err := json.Unmarshal(data, &body); err != nil {
 		return err
 	}
@@ -639,6 +694,7 @@ func (c *PromptRendering) cleanForPatch() *PromptRendering {
 			RenderingMode: c.RenderingMode,
 		}
 	}
+
 	return c
 }
 
@@ -646,6 +702,17 @@ func (c *PromptRendering) cleanForPatch() *PromptRendering {
 //
 // See: https://auth0.com/docs/api/management/v2/prompts/patch-rendering
 func (m *PromptManager) UpdateRendering(ctx context.Context, prompt PromptType, screen ScreenName, c *PromptRendering, opts ...RequestOption) error {
-	c = c.cleanForPatch()
+	if c != nil {
+		c = c.cleanForPatch()
+	}
+
 	return m.management.Request(ctx, "PATCH", m.management.URI("prompts", string(prompt), "screen", string(screen), "rendering"), c, opts...)
+}
+
+// ListRendering lists the settings for all the ACUL.
+//
+// See: https://auth0.com/docs/api/management/v2/prompts/get-all-rendering
+func (m *PromptManager) ListRendering(ctx context.Context, opts ...RequestOption) (c *PromptRenderingList, err error) {
+	err = m.management.Request(ctx, "GET", m.management.URI("prompts", "rendering"), &c, applyListDefaults(opts))
+	return
 }

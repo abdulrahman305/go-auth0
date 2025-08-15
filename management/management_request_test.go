@@ -32,6 +32,15 @@ func TestNewRequest(t *testing.T) {
 			expectedBody:  `{"name":"TestClient","description":"Test description"}` + "\n",
 		},
 		{
+			name:          "Create client request empty object body",
+			method:        http.MethodPost,
+			endpoint:      api.URI("clients"),
+			payload:       &Client{},
+			options:       nil,
+			expectedError: "",
+			expectedBody:  "{}\n",
+		},
+		{
 			name:          "Read client request",
 			method:        http.MethodGet,
 			endpoint:      api.URI("clients", "c4vFzE4qeMgIEzRryyCmHcxGBZqswlbX"),
@@ -45,6 +54,15 @@ func TestNewRequest(t *testing.T) {
 			method:        http.MethodGet,
 			endpoint:      api.URI("clients"),
 			payload:       nil,
+			options:       nil,
+			expectedError: "",
+			expectedBody:  "",
+		},
+		{
+			name:          "List clients request empty body",
+			method:        http.MethodGet,
+			endpoint:      api.URI("clients"),
+			payload:       &Client{},
 			options:       nil,
 			expectedError: "",
 			expectedBody:  "",
@@ -85,6 +103,26 @@ func TestNewRequest(t *testing.T) {
 			expectedError: "",
 			expectedBody:  "{}" + "\n",
 		},
+		{
+			name:     "Request with options",
+			method:   http.MethodPost,
+			endpoint: api.URI("clients"),
+			payload:  nil,
+			options: []RequestOption{
+				Body([]byte(`{"custom":"data"}`)),
+			},
+			expectedError: "",
+			expectedBody:  `{"custom":"data"}`,
+		},
+		{
+			name:          "Request with Delete with Body",
+			method:        http.MethodDelete,
+			endpoint:      api.URI("clients", "c4vFzE4qeMgIEzRryyCmHcxGBZqswlbX"),
+			payload:       &Client{Name: auth0.String("TestClient"), Description: auth0.String("Test description")},
+			options:       nil,
+			expectedError: "",
+			expectedBody:  `{"name":"TestClient","description":"Test description"}` + "\n",
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -94,6 +132,7 @@ func TestNewRequest(t *testing.T) {
 			if testCase.expectedError != "" {
 				assert.EqualError(t, err, testCase.expectedError)
 				assert.Nil(t, request)
+
 				return
 			}
 
@@ -104,7 +143,12 @@ func TestNewRequest(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, testCase.expectedBody, string(requestBody))
-			assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
+
+			if testCase.expectedBody != "" {
+				assert.Equal(t, "application/json", request.Header.Get("Content-Type"))
+			} else {
+				assert.Empty(t, request.Header.Get("Content-Type"))
+			}
 		})
 	}
 }

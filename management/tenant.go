@@ -82,6 +82,9 @@ type Tenant struct {
 	// Sessions related settings for the tenant.
 	Sessions *TenantSessions `json:"sessions,omitempty"`
 
+	// OIDC logout related settings for the tenant.
+	OIDCLogout *TenantOIDCLogout `json:"oidc_logout,omitempty"`
+
 	// If `true`, allows accepting an organization name or organization ID on auth endpoints.
 	AllowOrgNameInAuthAPI *bool `json:"allow_organization_name_in_authentication_api,omitempty"`
 
@@ -116,6 +119,46 @@ type Tenant struct {
 
 	// Enables the use of Pushed Authorization Requests
 	PushedAuthorizationRequestsSupported *bool `json:"pushed_authorization_requests_supported,omitempty"`
+
+	// Token Quota configuration, to configure quotas for token issuance for clients and organizations.
+	// Applied to all clients and organizations unless overridden in individual client or organization settings.
+	//
+	// To unset values (set to null), use a PATCH request like this:
+	//
+	// PATCH /api/v2/tenants/settings
+	// {
+	//   "default_token_quota": null
+	// }
+	//
+	// For more details on making custom requests, refer to the Auth0 Go SDK examples:
+	// https://github.com/auth0/go-auth0/blob/main/EXAMPLES.md#providing-a-custom-user-struct
+	DefaultTokenQuota *TenantDefaultTokenQuota `json:"default_token_quota,omitempty"`
+}
+
+// TenantDefaultTokenQuota holds settings for the default token quota.
+type TenantDefaultTokenQuota struct {
+	// Token quota configuration for clients.
+	Clients *TokenQuota `json:"clients,omitempty"`
+	// Token quota configuration for organizations.
+	Organizations *TokenQuota `json:"organizations,omitempty"`
+}
+
+// TokenQuota holds settings for the token quota configuration.
+type TokenQuota struct {
+	ClientCredentials *TokenQuotaClientCredentials `json:"client_credentials,omitempty"`
+}
+
+// TokenQuotaClientCredentials holds settings for the token quota configuration client credentials.
+type TokenQuotaClientCredentials struct {
+	// If enabled, the quota will be enforced and requests in excess of the quota will fail.
+	// If disabled, the quota will not be enforced, but notifications for requests exceeding the quota will be available in logs.
+	Enforce *bool `json:"enforce,omitempty"`
+
+	// Maximum number of issued tokens per day
+	PerDay *int `json:"per_day,omitempty"`
+
+	// Maximum number of issued tokens per hour
+	PerHour *int `json:"per_hour,omitempty"`
 }
 
 // TenantMTLSConfiguration hold settings for mTLS. If true, enables mTLS endpoint aliases.
@@ -127,6 +170,7 @@ type TenantMTLSConfiguration struct {
 // MarshalJSON is a custom serializer for the Tenant type.
 func (t *Tenant) MarshalJSON() ([]byte, error) {
 	type tenant Tenant
+
 	type tenantWrapper struct {
 		*tenant
 		SessionLifetimeInMinutes     *int `json:"session_lifetime_in_minutes,omitempty"`
@@ -141,6 +185,7 @@ func (t *Tenant) MarshalJSON() ([]byte, error) {
 		if sessionLifetime < 1 {
 			w.SessionLifetimeInMinutes = auth0.Int(int(math.Round(sessionLifetime * 60.0)))
 			w.SessionLifetime = nil
+
 			defer func() { w.SessionLifetime = &sessionLifetime }()
 		} else {
 			w.SessionLifetime = auth0.Float64(math.Round(sessionLifetime))
@@ -153,6 +198,7 @@ func (t *Tenant) MarshalJSON() ([]byte, error) {
 		if idleSessionLifetime < 1 {
 			w.IdleSessionLifetimeInMinutes = auth0.Int(int(math.Round(idleSessionLifetime * 60.0)))
 			w.IdleSessionLifetime = nil
+
 			defer func() { w.IdleSessionLifetime = &idleSessionLifetime }()
 		} else {
 			w.IdleSessionLifetime = auth0.Float64(math.Round(idleSessionLifetime))
@@ -258,7 +304,7 @@ type TenantFlags struct {
 	// Whether ID tokens and the userinfo endpoint includes a complete user profile (true) or only OpenID Connect claims (false).
 	EnableLegacyProfile *bool `json:"enable_legacy_profile,omitempty"`
 
-	// Whether ID tokens can be used to authorize some types of requests to API v2 (true) not not (false).
+	// Whether ID tokens can be used to authorize some types of requests to API v2 (true) not (false).
 	EnableIDTokenAPI2 *bool `json:"enable_idtoken_api2,omitempty"`
 
 	// Do not Publish Enterprise Connections Information with IdP domains on the lock configuration file.
@@ -319,6 +365,7 @@ type TenantUniversalLoginColors struct {
 // MarshalJSON is a custom serializer for the TenantUniversalLoginColors type.
 func (c *TenantUniversalLoginColors) MarshalJSON() ([]byte, error) {
 	type colors TenantUniversalLoginColors
+
 	type colorsWrapper struct {
 		*colors
 		RawPageBackground interface{} `json:"page_background,omitempty"`
@@ -344,6 +391,7 @@ func (c *TenantUniversalLoginColors) MarshalJSON() ([]byte, error) {
 // be a hex color string, or an object describing a gradient.
 func (c *TenantUniversalLoginColors) UnmarshalJSON(data []byte) error {
 	type colors BrandingColors
+
 	type colorsWrapper struct {
 		*colors
 		RawPageBackground json.RawMessage `json:"page_background,omitempty"`
@@ -358,6 +406,7 @@ func (c *TenantUniversalLoginColors) UnmarshalJSON(data []byte) error {
 
 	if alias.RawPageBackground != nil {
 		var v interface{}
+
 		err = json.Unmarshal(alias.RawPageBackground, &v)
 		if err != nil {
 			return err
@@ -369,10 +418,12 @@ func (c *TenantUniversalLoginColors) UnmarshalJSON(data []byte) error {
 
 		case map[string]interface{}:
 			var gradient BrandingPageBackgroundGradient
+
 			err = json.Unmarshal(alias.RawPageBackground, &gradient)
 			if err != nil {
 				return err
 			}
+
 			c.PageBackgroundGradient = &gradient
 
 		default:
@@ -402,6 +453,12 @@ type TenantSessionCookie struct {
 type TenantSessions struct {
 	// Whether to bypass prompting logic (false) when performing OIDC Logout.
 	OIDCLogoutPromptEnabled *bool `json:"oidc_logout_prompt_enabled,omitempty"`
+}
+
+// TenantOIDCLogout manages OIDC logout related settings for the tenant.
+type TenantOIDCLogout struct {
+	// Enable the end_session_endpoint URL in the .well-known discovery configuration.
+	OIDCResourceProviderLogoutEndSessionEndpointDiscovery *bool `json:"rp_logout_end_session_endpoint_discovery,omitempty"`
 }
 
 // TenantManager manages Auth0 Tenant resources.

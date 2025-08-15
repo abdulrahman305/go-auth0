@@ -118,21 +118,34 @@ type Management struct {
 	// EncryptionKey manages Auth0 Encryption Keys.
 	EncryptionKey *EncryptionKeyManager
 
+	// EventStream manages Auth0 Encryption Keys.
+	EventStream *EventStreamManager
+
+	// TokenExchangeProfile manages Auth0 Token Exchange Profiles.
+	TokenExchangeProfile *TokenExchangeProfileManager
+
 	// RefreshToken manages Auth0 Refresh Tokens.
 	RefreshToken *RefreshTokenManager
 
 	// Session manages Auth0 Sessions.
 	Session *SessionManager
 
-	url             *url.URL
-	basePath        string
-	userAgent       string
-	debug           bool
-	tokenSource     oauth2.TokenSource
-	http            *http.Client
-	auth0ClientInfo *client.Auth0ClientInfo
-	common          manager
-	retryStrategy   client.RetryOptions
+	// NetworkACL manages Auth0 Network ACLs.
+	NetworkACL *NetworkACLManager
+
+	// RiskAssessment manages Auth0 Risk Assessment.
+	RiskAssessment *RiskAssessmentManager
+
+	url                *url.URL
+	basePath           string
+	userAgent          string
+	debug              bool
+	tokenSource        oauth2.TokenSource
+	http               *http.Client
+	auth0ClientInfo    *client.Auth0ClientInfo
+	common             manager
+	retryStrategy      client.RetryOptions
+	customDomainHeader string
 }
 
 type manager struct {
@@ -147,6 +160,7 @@ func New(domain string, options ...Option) (*Management, error) {
 	if i := strings.Index(domain, "//"); i != -1 {
 		domain = domain[i+2:]
 	}
+
 	domain = "https://" + domain
 
 	u, err := url.Parse(domain)
@@ -220,11 +234,13 @@ func New(domain string, options ...Option) (*Management, error) {
 	m.RuleConfig = (*RuleConfigManager)(&m.common)
 	m.SigningKey = (*SigningKeyManager)(&m.common)
 	m.EncryptionKey = (*EncryptionKeyManager)(&m.common)
+	m.EventStream = (*EventStreamManager)(&m.common)
 	m.Stat = (*StatManager)(&m.common)
 	m.Tenant = (*TenantManager)(&m.common)
 	m.Ticket = (*TicketManager)(&m.common)
 	m.User = (*UserManager)(&m.common)
 	m.SelfServiceProfile = (*SelfServiceProfileManager)(&m.common)
+	m.TokenExchangeProfile = (*TokenExchangeProfileManager)(&m.common)
 	m.Form = (*FormManager)(&m.common)
 	m.Flow = &FlowManager{
 		management: m,
@@ -232,5 +248,8 @@ func New(domain string, options ...Option) (*Management, error) {
 	}
 	m.RefreshToken = (*RefreshTokenManager)(&m.common)
 	m.Session = (*SessionManager)(&m.common)
+	m.NetworkACL = (*NetworkACLManager)(&m.common)
+	m.RiskAssessment = (*RiskAssessmentManager)(&m.common)
+
 	return m, nil
 }

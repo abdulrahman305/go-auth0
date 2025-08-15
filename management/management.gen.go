@@ -39,6 +39,14 @@ func (a *Action) GetDependencies() []ActionDependency {
 	return *a.Dependencies
 }
 
+// GetDeploy returns the Deploy field if it's non-nil, zero value otherwise.
+func (a *Action) GetDeploy() bool {
+	if a == nil || a.Deploy == nil {
+		return false
+	}
+	return *a.Deploy
+}
+
 // GetDeployedVersion returns the DeployedVersion field.
 func (a *Action) GetDeployedVersion() *ActionVersion {
 	if a == nil {
@@ -1003,6 +1011,238 @@ func (b *BrandingPageBackgroundGradient) String() string {
 	return Stringify(b)
 }
 
+// GetChannel returns the Channel field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneNotificationTemplate) GetChannel() string {
+	if b == nil || b.Channel == nil {
+		return ""
+	}
+	return *b.Channel
+}
+
+// GetContent returns the Content field.
+func (b *BrandingPhoneNotificationTemplate) GetContent() *BrandingPhoneNotificationTemplateContent {
+	if b == nil {
+		return nil
+	}
+	return b.Content
+}
+
+// GetCustomizable returns the Customizable field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneNotificationTemplate) GetCustomizable() bool {
+	if b == nil || b.Customizable == nil {
+		return false
+	}
+	return *b.Customizable
+}
+
+// GetDisabled returns the Disabled field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneNotificationTemplate) GetDisabled() bool {
+	if b == nil || b.Disabled == nil {
+		return false
+	}
+	return *b.Disabled
+}
+
+// GetID returns the ID field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneNotificationTemplate) GetID() string {
+	if b == nil || b.ID == nil {
+		return ""
+	}
+	return *b.ID
+}
+
+// GetTenant returns the Tenant field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneNotificationTemplate) GetTenant() string {
+	if b == nil || b.Tenant == nil {
+		return ""
+	}
+	return *b.Tenant
+}
+
+// GetType returns the Type field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneNotificationTemplate) GetType() string {
+	if b == nil || b.Type == nil {
+		return ""
+	}
+	return *b.Type
+}
+
+// String returns a string representation of BrandingPhoneNotificationTemplate.
+func (b *BrandingPhoneNotificationTemplate) String() string {
+	return Stringify(b)
+}
+
+// GetBody returns the Body field.
+func (b *BrandingPhoneNotificationTemplateContent) GetBody() *BrandingPhoneNotificationTemplateContentBody {
+	if b == nil {
+		return nil
+	}
+	return b.Body
+}
+
+// GetFrom returns the From field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneNotificationTemplateContent) GetFrom() string {
+	if b == nil || b.From == nil {
+		return ""
+	}
+	return *b.From
+}
+
+// GetSyntax returns the Syntax field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneNotificationTemplateContent) GetSyntax() string {
+	if b == nil || b.Syntax == nil {
+		return ""
+	}
+	return *b.Syntax
+}
+
+// String returns a string representation of BrandingPhoneNotificationTemplateContent.
+func (b *BrandingPhoneNotificationTemplateContent) String() string {
+	return Stringify(b)
+}
+
+// GetText returns the Text field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneNotificationTemplateContentBody) GetText() string {
+	if b == nil || b.Text == nil {
+		return ""
+	}
+	return *b.Text
+}
+
+// GetVoice returns the Voice field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneNotificationTemplateContentBody) GetVoice() string {
+	if b == nil || b.Voice == nil {
+		return ""
+	}
+	return *b.Voice
+}
+
+// String returns a string representation of BrandingPhoneNotificationTemplateContentBody.
+func (b *BrandingPhoneNotificationTemplateContentBody) String() string {
+	return Stringify(b)
+}
+
+// String returns a string representation of BrandingPhoneNotificationTemplateList.
+func (b *BrandingPhoneNotificationTemplateList) String() string {
+	return Stringify(b)
+}
+
+// GetChannel returns the Channel field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneProvider) GetChannel() string {
+	if b == nil || b.Channel == nil {
+		return ""
+	}
+	return *b.Channel
+}
+
+// GetConfiguration returns the Configuration field.
+func (b *BrandingPhoneProvider) GetConfiguration() *BrandingPhoneProviderConfiguration {
+	if b == nil {
+		return nil
+	}
+	return b.Configuration
+}
+
+// GetCredentials returns the Credentials field.
+func (b *BrandingPhoneProvider) GetCredentials() *BrandingPhoneProviderCredential {
+	if b == nil {
+		return nil
+	}
+	return b.Credentials
+}
+
+// GetDisabled returns the Disabled field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneProvider) GetDisabled() bool {
+	if b == nil || b.Disabled == nil {
+		return false
+	}
+	return *b.Disabled
+}
+
+// GetID returns the ID field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneProvider) GetID() string {
+	if b == nil || b.ID == nil {
+		return ""
+	}
+	return *b.ID
+}
+
+// GetName returns the Name field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneProvider) GetName() string {
+	if b == nil || b.Name == nil {
+		return ""
+	}
+	return *b.Name
+}
+
+// GetTenant returns the Tenant field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneProvider) GetTenant() string {
+	if b == nil || b.Tenant == nil {
+		return ""
+	}
+	return *b.Tenant
+}
+
+// String returns a string representation of BrandingPhoneProvider.
+func (b *BrandingPhoneProvider) String() string {
+	return Stringify(b)
+}
+
+// GetDefaultFrom returns the DefaultFrom field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneProviderConfiguration) GetDefaultFrom() string {
+	if b == nil || b.DefaultFrom == nil {
+		return ""
+	}
+	return *b.DefaultFrom
+}
+
+// GetDeliveryMethods returns the DeliveryMethods field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneProviderConfiguration) GetDeliveryMethods() []string {
+	if b == nil || b.DeliveryMethods == nil {
+		return nil
+	}
+	return *b.DeliveryMethods
+}
+
+// GetMSSID returns the MSSID field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneProviderConfiguration) GetMSSID() string {
+	if b == nil || b.MSSID == nil {
+		return ""
+	}
+	return *b.MSSID
+}
+
+// GetSID returns the SID field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneProviderConfiguration) GetSID() string {
+	if b == nil || b.SID == nil {
+		return ""
+	}
+	return *b.SID
+}
+
+// String returns a string representation of BrandingPhoneProviderConfiguration.
+func (b *BrandingPhoneProviderConfiguration) String() string {
+	return Stringify(b)
+}
+
+// GetAuthToken returns the AuthToken field if it's non-nil, zero value otherwise.
+func (b *BrandingPhoneProviderCredential) GetAuthToken() string {
+	if b == nil || b.AuthToken == nil {
+		return ""
+	}
+	return *b.AuthToken
+}
+
+// String returns a string representation of BrandingPhoneProviderCredential.
+func (b *BrandingPhoneProviderCredential) String() string {
+	return Stringify(b)
+}
+
+// String returns a string representation of BrandingPhoneProviderList.
+func (b *BrandingPhoneProviderList) String() string {
+	return Stringify(b)
+}
+
 // GetDisplayName returns the DisplayName field if it's non-nil, zero value otherwise.
 func (b *BrandingTheme) GetDisplayName() string {
 	if b == nil || b.DisplayName == nil {
@@ -1070,6 +1310,72 @@ func (b *BrandingThemeWidget) String() string {
 	return Stringify(b)
 }
 
+// GetDeliveryMethod returns the DeliveryMethod field if it's non-nil, zero value otherwise.
+func (b *BrandingTryPhoneNotificationTemplate) GetDeliveryMethod() string {
+	if b == nil || b.DeliveryMethod == nil {
+		return ""
+	}
+	return *b.DeliveryMethod
+}
+
+// GetMessage returns the Message field if it's non-nil, zero value otherwise.
+func (b *BrandingTryPhoneNotificationTemplate) GetMessage() string {
+	if b == nil || b.Message == nil {
+		return ""
+	}
+	return *b.Message
+}
+
+// GetTo returns the To field if it's non-nil, zero value otherwise.
+func (b *BrandingTryPhoneNotificationTemplate) GetTo() string {
+	if b == nil || b.To == nil {
+		return ""
+	}
+	return *b.To
+}
+
+// String returns a string representation of BrandingTryPhoneNotificationTemplate.
+func (b *BrandingTryPhoneNotificationTemplate) String() string {
+	return Stringify(b)
+}
+
+// GetCode returns the Code field if it's non-nil, zero value otherwise.
+func (b *BrandingTryPhoneProvider) GetCode() int {
+	if b == nil || b.Code == nil {
+		return 0
+	}
+	return *b.Code
+}
+
+// GetDeliveryMethod returns the DeliveryMethod field if it's non-nil, zero value otherwise.
+func (b *BrandingTryPhoneProvider) GetDeliveryMethod() string {
+	if b == nil || b.DeliveryMethod == nil {
+		return ""
+	}
+	return *b.DeliveryMethod
+}
+
+// GetMessage returns the Message field if it's non-nil, zero value otherwise.
+func (b *BrandingTryPhoneProvider) GetMessage() string {
+	if b == nil || b.Message == nil {
+		return ""
+	}
+	return *b.Message
+}
+
+// GetTo returns the To field if it's non-nil, zero value otherwise.
+func (b *BrandingTryPhoneProvider) GetTo() string {
+	if b == nil || b.To == nil {
+		return ""
+	}
+	return *b.To
+}
+
+// String returns a string representation of BrandingTryPhoneProvider.
+func (b *BrandingTryPhoneProvider) String() string {
+	return Stringify(b)
+}
+
 // GetBody returns the Body field if it's non-nil, zero value otherwise.
 func (b *BrandingUniversalLogin) GetBody() string {
 	if b == nil || b.Body == nil {
@@ -1129,6 +1435,19 @@ func (b *BreachedPasswordDetection) String() string {
 }
 
 // GetShields returns the Shields field if it's non-nil, zero value otherwise.
+func (b *BreachedPasswordDetectionPreChangePassword) GetShields() []string {
+	if b == nil || b.Shields == nil {
+		return nil
+	}
+	return *b.Shields
+}
+
+// String returns a string representation of BreachedPasswordDetectionPreChangePassword.
+func (b *BreachedPasswordDetectionPreChangePassword) String() string {
+	return Stringify(b)
+}
+
+// GetShields returns the Shields field if it's non-nil, zero value otherwise.
 func (b *BreachedPasswordDetectionPreUserRegistration) GetShields() []string {
 	if b == nil || b.Shields == nil {
 		return nil
@@ -1139,6 +1458,14 @@ func (b *BreachedPasswordDetectionPreUserRegistration) GetShields() []string {
 // String returns a string representation of BreachedPasswordDetectionPreUserRegistration.
 func (b *BreachedPasswordDetectionPreUserRegistration) String() string {
 	return Stringify(b)
+}
+
+// GetPreChangePassword returns the PreChangePassword field.
+func (b *BreachedPasswordDetectionStage) GetPreChangePassword() *BreachedPasswordDetectionPreChangePassword {
+	if b == nil {
+		return nil
+	}
+	return b.PreChangePassword
 }
 
 // GetPreUserRegistration returns the PreUserRegistration field.
@@ -1503,6 +1830,14 @@ func (c *Client) GetRequirePushedAuthorizationRequests() bool {
 	return *c.RequirePushedAuthorizationRequests
 }
 
+// GetSessionTransfer returns the SessionTransfer field.
+func (c *Client) GetSessionTransfer() *SessionTransfer {
+	if c == nil {
+		return nil
+	}
+	return c.SessionTransfer
+}
+
 // GetSignedRequestObject returns the SignedRequestObject field.
 func (c *Client) GetSignedRequestObject() *ClientSignedRequestObject {
 	if c == nil {
@@ -1533,6 +1868,22 @@ func (c *Client) GetTokenEndpointAuthMethod() string {
 		return ""
 	}
 	return *c.TokenEndpointAuthMethod
+}
+
+// GetTokenExchange returns the TokenExchange field.
+func (c *Client) GetTokenExchange() *ClientTokenExchange {
+	if c == nil {
+		return nil
+	}
+	return c.TokenExchange
+}
+
+// GetTokenQuota returns the TokenQuota field.
+func (c *Client) GetTokenQuota() *TokenQuota {
+	if c == nil {
+		return nil
+	}
+	return c.TokenQuota
 }
 
 // GetWebOrigins returns the WebOrigins field if it's non-nil, zero value otherwise.
@@ -2014,6 +2365,14 @@ func (c *ClientNativeSocialLogin) GetFacebook() *ClientNativeSocialLoginSupportE
 	return c.Facebook
 }
 
+// GetGoogle returns the Google field.
+func (c *ClientNativeSocialLogin) GetGoogle() *ClientNativeSocialLoginSupportEnabled {
+	if c == nil {
+		return nil
+	}
+	return c.Google
+}
+
 // String returns a string representation of ClientNativeSocialLogin.
 func (c *ClientNativeSocialLogin) String() string {
 	return Stringify(c)
@@ -2072,6 +2431,14 @@ func (c *ClientRefreshToken) GetLeeway() int {
 	return *c.Leeway
 }
 
+// GetPolicies returns the Policies field if it's non-nil, zero value otherwise.
+func (c *ClientRefreshToken) GetPolicies() []ClientRefreshTokenPolicy {
+	if c == nil || c.Policies == nil {
+		return nil
+	}
+	return *c.Policies
+}
+
 // GetRotationType returns the RotationType field if it's non-nil, zero value otherwise.
 func (c *ClientRefreshToken) GetRotationType() string {
 	if c == nil || c.RotationType == nil {
@@ -2093,6 +2460,27 @@ func (c *ClientRefreshToken) String() string {
 	return Stringify(c)
 }
 
+// GetAudience returns the Audience field if it's non-nil, zero value otherwise.
+func (c *ClientRefreshTokenPolicy) GetAudience() string {
+	if c == nil || c.Audience == nil {
+		return ""
+	}
+	return *c.Audience
+}
+
+// GetScope returns the Scope field if it's non-nil, zero value otherwise.
+func (c *ClientRefreshTokenPolicy) GetScope() []string {
+	if c == nil || c.Scope == nil {
+		return nil
+	}
+	return *c.Scope
+}
+
+// String returns a string representation of ClientRefreshTokenPolicy.
+func (c *ClientRefreshTokenPolicy) String() string {
+	return Stringify(c)
+}
+
 // GetCredentials returns the Credentials field if it's non-nil, zero value otherwise.
 func (c *ClientSignedRequestObject) GetCredentials() []Credential {
 	if c == nil || c.Credentials == nil {
@@ -2111,6 +2499,19 @@ func (c *ClientSignedRequestObject) GetRequired() bool {
 
 // String returns a string representation of ClientSignedRequestObject.
 func (c *ClientSignedRequestObject) String() string {
+	return Stringify(c)
+}
+
+// GetAllowAnyProfileOfType returns the AllowAnyProfileOfType field if it's non-nil, zero value otherwise.
+func (c *ClientTokenExchange) GetAllowAnyProfileOfType() []string {
+	if c == nil || c.AllowAnyProfileOfType == nil {
+		return nil
+	}
+	return *c.AllowAnyProfileOfType
+}
+
+// String returns a string representation of ClientTokenExchange.
+func (c *ClientTokenExchange) String() string {
 	return Stringify(c)
 }
 
@@ -2209,6 +2610,40 @@ func (c *Connection) String() string {
 	return Stringify(c)
 }
 
+// GetClientID returns the ClientID field if it's non-nil, zero value otherwise.
+func (c *ConnectionEnabledClient) GetClientID() string {
+	if c == nil || c.ClientID == nil {
+		return ""
+	}
+	return *c.ClientID
+}
+
+// GetStatus returns the Status field if it's non-nil, zero value otherwise.
+func (c *ConnectionEnabledClient) GetStatus() bool {
+	if c == nil || c.Status == nil {
+		return false
+	}
+	return *c.Status
+}
+
+// String returns a string representation of ConnectionEnabledClient.
+func (c *ConnectionEnabledClient) String() string {
+	return Stringify(c)
+}
+
+// GetClients returns the Clients field if it's non-nil, zero value otherwise.
+func (c *ConnectionEnabledClientList) GetClients() []ConnectionEnabledClient {
+	if c == nil || c.Clients == nil {
+		return nil
+	}
+	return *c.Clients
+}
+
+// String returns a string representation of ConnectionEnabledClientList.
+func (c *ConnectionEnabledClientList) String() string {
+	return Stringify(c)
+}
+
 // GetAudience returns the Audience field if it's non-nil, zero value otherwise.
 func (c *ConnectionGatewayAuthentication) GetAudience() string {
 	if c == nil || c.Audience == nil {
@@ -2251,6 +2686,107 @@ func (c *ConnectionGatewayAuthentication) GetSubject() string {
 
 // String returns a string representation of ConnectionGatewayAuthentication.
 func (c *ConnectionGatewayAuthentication) String() string {
+	return Stringify(c)
+}
+
+// GetAlgorithm returns the Algorithm field if it's non-nil, zero value otherwise.
+func (c *ConnectionKey) GetAlgorithm() string {
+	if c == nil || c.Algorithm == nil {
+		return ""
+	}
+	return *c.Algorithm
+}
+
+// GetCert returns the Cert field if it's non-nil, zero value otherwise.
+func (c *ConnectionKey) GetCert() string {
+	if c == nil || c.Cert == nil {
+		return ""
+	}
+	return *c.Cert
+}
+
+// GetCurrent returns the Current field if it's non-nil, zero value otherwise.
+func (c *ConnectionKey) GetCurrent() bool {
+	if c == nil || c.Current == nil {
+		return false
+	}
+	return *c.Current
+}
+
+// GetCurrentSince returns the CurrentSince field if it's non-nil, zero value otherwise.
+func (c *ConnectionKey) GetCurrentSince() string {
+	if c == nil || c.CurrentSince == nil {
+		return ""
+	}
+	return *c.CurrentSince
+}
+
+// GetFingerprint returns the Fingerprint field if it's non-nil, zero value otherwise.
+func (c *ConnectionKey) GetFingerprint() string {
+	if c == nil || c.Fingerprint == nil {
+		return ""
+	}
+	return *c.Fingerprint
+}
+
+// GetKeyUse returns the KeyUse field if it's non-nil, zero value otherwise.
+func (c *ConnectionKey) GetKeyUse() string {
+	if c == nil || c.KeyUse == nil {
+		return ""
+	}
+	return *c.KeyUse
+}
+
+// GetKID returns the KID field if it's non-nil, zero value otherwise.
+func (c *ConnectionKey) GetKID() string {
+	if c == nil || c.KID == nil {
+		return ""
+	}
+	return *c.KID
+}
+
+// GetNext returns the Next field if it's non-nil, zero value otherwise.
+func (c *ConnectionKey) GetNext() bool {
+	if c == nil || c.Next == nil {
+		return false
+	}
+	return *c.Next
+}
+
+// GetPKCS returns the PKCS field if it's non-nil, zero value otherwise.
+func (c *ConnectionKey) GetPKCS() string {
+	if c == nil || c.PKCS == nil {
+		return ""
+	}
+	return *c.PKCS
+}
+
+// GetPrevious returns the Previous field if it's non-nil, zero value otherwise.
+func (c *ConnectionKey) GetPrevious() bool {
+	if c == nil || c.Previous == nil {
+		return false
+	}
+	return *c.Previous
+}
+
+// GetSubjectDN returns the SubjectDN field if it's non-nil, zero value otherwise.
+func (c *ConnectionKey) GetSubjectDN() string {
+	if c == nil || c.SubjectDN == nil {
+		return ""
+	}
+	return *c.SubjectDN
+}
+
+// GetThumbprint returns the Thumbprint field if it's non-nil, zero value otherwise.
+func (c *ConnectionKey) GetThumbprint() string {
+	if c == nil || c.Thumbprint == nil {
+		return ""
+	}
+	return *c.Thumbprint
+}
+
+// String returns a string representation of ConnectionKey.
+func (c *ConnectionKey) String() string {
 	return Stringify(c)
 }
 
@@ -2409,6 +2945,14 @@ func (c *ConnectionOptions) GetPrecedence() []string {
 		return nil
 	}
 	return *c.Precedence
+}
+
+// GetRealmFallback returns the RealmFallback field if it's non-nil, zero value otherwise.
+func (c *ConnectionOptions) GetRealmFallback() bool {
+	if c == nil || c.RealmFallback == nil {
+		return false
+	}
+	return *c.RealmFallback
 }
 
 // GetRequiresUsername returns the RequiresUsername field if it's non-nil, zero value otherwise.
@@ -4514,6 +5058,14 @@ func (c *ConnectionOptionsOAuth2) GetClientSecret() string {
 	return *c.ClientSecret
 }
 
+// GetCustomHeaders returns the CustomHeaders field if it's non-nil, zero value otherwise.
+func (c *ConnectionOptionsOAuth2) GetCustomHeaders() map[string]string {
+	if c == nil || c.CustomHeaders == nil {
+		return map[string]string{}
+	}
+	return *c.CustomHeaders
+}
+
 // GetLogoURL returns the LogoURL field if it's non-nil, zero value otherwise.
 func (c *ConnectionOptionsOAuth2) GetLogoURL() string {
 	if c == nil || c.LogoURL == nil {
@@ -4711,6 +5263,22 @@ func (c *ConnectionOptionsOIDC) GetTokenEndpoint() string {
 	return *c.TokenEndpoint
 }
 
+// GetTokenEndpointAuthMethod returns the TokenEndpointAuthMethod field if it's non-nil, zero value otherwise.
+func (c *ConnectionOptionsOIDC) GetTokenEndpointAuthMethod() string {
+	if c == nil || c.TokenEndpointAuthMethod == nil {
+		return ""
+	}
+	return *c.TokenEndpointAuthMethod
+}
+
+// GetTokenEndpointAuthSigningAlg returns the TokenEndpointAuthSigningAlg field if it's non-nil, zero value otherwise.
+func (c *ConnectionOptionsOIDC) GetTokenEndpointAuthSigningAlg() string {
+	if c == nil || c.TokenEndpointAuthSigningAlg == nil {
+		return ""
+	}
+	return *c.TokenEndpointAuthSigningAlg
+}
+
 // GetType returns the Type field if it's non-nil, zero value otherwise.
 func (c *ConnectionOptionsOIDC) GetType() string {
 	if c == nil || c.Type == nil {
@@ -4892,6 +5460,22 @@ func (c *ConnectionOptionsOkta) GetTokenEndpoint() string {
 		return ""
 	}
 	return *c.TokenEndpoint
+}
+
+// GetTokenEndpointAuthMethod returns the TokenEndpointAuthMethod field if it's non-nil, zero value otherwise.
+func (c *ConnectionOptionsOkta) GetTokenEndpointAuthMethod() string {
+	if c == nil || c.TokenEndpointAuthMethod == nil {
+		return ""
+	}
+	return *c.TokenEndpointAuthMethod
+}
+
+// GetTokenEndpointAuthSigningAlg returns the TokenEndpointAuthSigningAlg field if it's non-nil, zero value otherwise.
+func (c *ConnectionOptionsOkta) GetTokenEndpointAuthSigningAlg() string {
+	if c == nil || c.TokenEndpointAuthSigningAlg == nil {
+		return ""
+	}
+	return *c.TokenEndpointAuthSigningAlg
 }
 
 // GetUpstreamParams returns the UpstreamParams map if it's non-nil, an empty map otherwise.
@@ -5453,6 +6037,22 @@ func (c *ConnectionOptionsSAML) GetFieldsMap() map[string]interface{} {
 		return map[string]interface{}{}
 	}
 	return c.FieldsMap
+}
+
+// GetGlobalTokenRevocationJWTIss returns the GlobalTokenRevocationJWTIss field if it's non-nil, zero value otherwise.
+func (c *ConnectionOptionsSAML) GetGlobalTokenRevocationJWTIss() string {
+	if c == nil || c.GlobalTokenRevocationJWTIss == nil {
+		return ""
+	}
+	return *c.GlobalTokenRevocationJWTIss
+}
+
+// GetGlobalTokenRevocationJWTSub returns the GlobalTokenRevocationJWTSub field if it's non-nil, zero value otherwise.
+func (c *ConnectionOptionsSAML) GetGlobalTokenRevocationJWTSub() string {
+	if c == nil || c.GlobalTokenRevocationJWTSub == nil {
+		return ""
+	}
+	return *c.GlobalTokenRevocationJWTSub
 }
 
 // GetIdpInitiated returns the IdpInitiated field.
@@ -6204,6 +6804,14 @@ func (c *Credential) String() string {
 	return Stringify(c)
 }
 
+// GetCertificate returns the Certificate field.
+func (c *CustomDomain) GetCertificate() *CustomDomainCertificate {
+	if c == nil {
+		return nil
+	}
+	return c.Certificate
+}
+
 // GetCNAMEAPIKey returns the CNAMEAPIKey field if it's non-nil, zero value otherwise.
 func (c *CustomDomain) GetCNAMEAPIKey() string {
 	if c == nil || c.CNAMEAPIKey == nil {
@@ -6226,6 +6834,14 @@ func (c *CustomDomain) GetDomain() string {
 		return ""
 	}
 	return *c.Domain
+}
+
+// GetDomainMetadata returns the DomainMetadata field if it's non-nil, zero value otherwise.
+func (c *CustomDomain) GetDomainMetadata() map[string]interface{} {
+	if c == nil || c.DomainMetadata == nil {
+		return map[string]interface{}{}
+	}
+	return *c.DomainMetadata
 }
 
 // GetID returns the ID field if it's non-nil, zero value otherwise.
@@ -6295,6 +6911,72 @@ func (c *CustomDomain) GetVerificationMethod() string {
 // String returns a string representation of CustomDomain.
 func (c *CustomDomain) String() string {
 	return Stringify(c)
+}
+
+// GetCertificateAuthority returns the CertificateAuthority field if it's non-nil, zero value otherwise.
+func (c *CustomDomainCertificate) GetCertificateAuthority() string {
+	if c == nil || c.CertificateAuthority == nil {
+		return ""
+	}
+	return *c.CertificateAuthority
+}
+
+// GetErrorMsg returns the ErrorMsg field if it's non-nil, zero value otherwise.
+func (c *CustomDomainCertificate) GetErrorMsg() string {
+	if c == nil || c.ErrorMsg == nil {
+		return ""
+	}
+	return *c.ErrorMsg
+}
+
+// GetRenewsBefore returns the RenewsBefore field if it's non-nil, zero value otherwise.
+func (c *CustomDomainCertificate) GetRenewsBefore() string {
+	if c == nil || c.RenewsBefore == nil {
+		return ""
+	}
+	return *c.RenewsBefore
+}
+
+// GetStatus returns the Status field if it's non-nil, zero value otherwise.
+func (c *CustomDomainCertificate) GetStatus() string {
+	if c == nil || c.Status == nil {
+		return ""
+	}
+	return *c.Status
+}
+
+// String returns a string representation of CustomDomainCertificate.
+func (c *CustomDomainCertificate) String() string {
+	return Stringify(c)
+}
+
+// String returns a string representation of CustomDomainList.
+func (c *CustomDomainList) String() string {
+	return Stringify(c)
+}
+
+// GetErrorMsg returns the ErrorMsg field if it's non-nil, zero value otherwise.
+func (c *CustomDomainVerification) GetErrorMsg() string {
+	if c == nil || c.ErrorMsg == nil {
+		return ""
+	}
+	return *c.ErrorMsg
+}
+
+// GetLastVerifiedAt returns the LastVerifiedAt field if it's non-nil, zero value otherwise.
+func (c *CustomDomainVerification) GetLastVerifiedAt() string {
+	if c == nil || c.LastVerifiedAt == nil {
+		return ""
+	}
+	return *c.LastVerifiedAt
+}
+
+// GetStatus returns the Status field if it's non-nil, zero value otherwise.
+func (c *CustomDomainVerification) GetStatus() string {
+	if c == nil || c.Status == nil {
+		return ""
+	}
+	return *c.Status
 }
 
 // String returns a string representation of CustomDomainVerification.
@@ -6962,6 +7644,106 @@ func (e *Enrollment) String() string {
 
 // String returns a string representation of EnrollmentTicket.
 func (e *EnrollmentTicket) String() string {
+	return Stringify(e)
+}
+
+// GetCreatedAt returns the CreatedAt field if it's non-nil, zero value otherwise.
+func (e *EventStream) GetCreatedAt() time.Time {
+	if e == nil || e.CreatedAt == nil {
+		return time.Time{}
+	}
+	return *e.CreatedAt
+}
+
+// GetDestination returns the Destination field.
+func (e *EventStream) GetDestination() *EventStreamDestination {
+	if e == nil {
+		return nil
+	}
+	return e.Destination
+}
+
+// GetID returns the ID field if it's non-nil, zero value otherwise.
+func (e *EventStream) GetID() string {
+	if e == nil || e.ID == nil {
+		return ""
+	}
+	return *e.ID
+}
+
+// GetName returns the Name field if it's non-nil, zero value otherwise.
+func (e *EventStream) GetName() string {
+	if e == nil || e.Name == nil {
+		return ""
+	}
+	return *e.Name
+}
+
+// GetStatus returns the Status field if it's non-nil, zero value otherwise.
+func (e *EventStream) GetStatus() string {
+	if e == nil || e.Status == nil {
+		return ""
+	}
+	return *e.Status
+}
+
+// GetSubscriptions returns the Subscriptions field if it's non-nil, zero value otherwise.
+func (e *EventStream) GetSubscriptions() []EventStreamSubscription {
+	if e == nil || e.Subscriptions == nil {
+		return nil
+	}
+	return *e.Subscriptions
+}
+
+// GetUpdatedAt returns the UpdatedAt field if it's non-nil, zero value otherwise.
+func (e *EventStream) GetUpdatedAt() time.Time {
+	if e == nil || e.UpdatedAt == nil {
+		return time.Time{}
+	}
+	return *e.UpdatedAt
+}
+
+// String returns a string representation of EventStream.
+func (e *EventStream) String() string {
+	return Stringify(e)
+}
+
+// GetEventStreamDestinationConfiguration returns the EventStreamDestinationConfiguration map if it's non-nil, an empty map otherwise.
+func (e *EventStreamDestination) GetEventStreamDestinationConfiguration() map[string]interface{} {
+	if e == nil || e.EventStreamDestinationConfiguration == nil {
+		return map[string]interface{}{}
+	}
+	return e.EventStreamDestinationConfiguration
+}
+
+// GetEventStreamDestinationType returns the EventStreamDestinationType field if it's non-nil, zero value otherwise.
+func (e *EventStreamDestination) GetEventStreamDestinationType() string {
+	if e == nil || e.EventStreamDestinationType == nil {
+		return ""
+	}
+	return *e.EventStreamDestinationType
+}
+
+// String returns a string representation of EventStreamDestination.
+func (e *EventStreamDestination) String() string {
+	return Stringify(e)
+}
+
+// String returns a string representation of EventStreamList.
+func (e *EventStreamList) String() string {
+	return Stringify(e)
+}
+
+// GetEventStreamSubscriptionType returns the EventStreamSubscriptionType field if it's non-nil, zero value otherwise.
+func (e *EventStreamSubscription) GetEventStreamSubscriptionType() string {
+	if e == nil || e.EventStreamSubscriptionType == nil {
+		return ""
+	}
+	return *e.EventStreamSubscriptionType
+}
+
+// String returns a string representation of EventStreamSubscription.
+func (e *EventStreamSubscription) String() string {
 	return Stringify(e)
 }
 
@@ -7881,6 +8663,22 @@ func (l *LogStream) GetName() string {
 	return *l.Name
 }
 
+// GetPIIConfig returns the PIIConfig field.
+func (l *LogStream) GetPIIConfig() *LogStreamPiiConfig {
+	if l == nil {
+		return nil
+	}
+	return l.PIIConfig
+}
+
+// GetStartFrom returns the StartFrom field if it's non-nil, zero value otherwise.
+func (l *LogStream) GetStartFrom() string {
+	if l == nil || l.StartFrom == nil {
+		return ""
+	}
+	return *l.StartFrom
+}
+
 // GetStatus returns the Status field if it's non-nil, zero value otherwise.
 func (l *LogStream) GetStatus() string {
 	if l == nil || l.Status == nil {
@@ -7899,6 +8697,35 @@ func (l *LogStream) GetType() string {
 
 // String returns a string representation of LogStream.
 func (l *LogStream) String() string {
+	return Stringify(l)
+}
+
+// GetAlgorithm returns the Algorithm field if it's non-nil, zero value otherwise.
+func (l *LogStreamPiiConfig) GetAlgorithm() string {
+	if l == nil || l.Algorithm == nil {
+		return ""
+	}
+	return *l.Algorithm
+}
+
+// GetLogFields returns the LogFields field if it's non-nil, zero value otherwise.
+func (l *LogStreamPiiConfig) GetLogFields() []string {
+	if l == nil || l.LogFields == nil {
+		return nil
+	}
+	return *l.LogFields
+}
+
+// GetMethod returns the Method field if it's non-nil, zero value otherwise.
+func (l *LogStreamPiiConfig) GetMethod() string {
+	if l == nil || l.Method == nil {
+		return ""
+	}
+	return *l.Method
+}
+
+// String returns a string representation of LogStreamPiiConfig.
+func (l *LogStreamPiiConfig) String() string {
 	return Stringify(l)
 }
 
@@ -8379,6 +9206,19 @@ func (m *MultiFactorPushDirectFCM) String() string {
 	return Stringify(m)
 }
 
+// GetServerCredentials returns the ServerCredentials field if it's non-nil, zero value otherwise.
+func (m *MultiFactorPushDirectFCMv1) GetServerCredentials() string {
+	if m == nil || m.ServerCredentials == nil {
+		return ""
+	}
+	return *m.ServerCredentials
+}
+
+// String returns a string representation of MultiFactorPushDirectFCMv1.
+func (m *MultiFactorPushDirectFCMv1) String() string {
+	return Stringify(m)
+}
+
 // GetEnrollmentMessage returns the EnrollmentMessage field if it's non-nil, zero value otherwise.
 func (m *MultiFactorSMSTemplate) GetEnrollmentMessage() string {
 	if m == nil || m.EnrollmentMessage == nil {
@@ -8427,6 +9267,218 @@ func (m *MultiFactorWebAuthnSettings) GetUserVerification() string {
 // String returns a string representation of MultiFactorWebAuthnSettings.
 func (m *MultiFactorWebAuthnSettings) String() string {
 	return Stringify(m)
+}
+
+// GetActive returns the Active field if it's non-nil, zero value otherwise.
+func (n *NetworkACL) GetActive() bool {
+	if n == nil || n.Active == nil {
+		return false
+	}
+	return *n.Active
+}
+
+// GetCreatedAt returns the CreatedAt field if it's non-nil, zero value otherwise.
+func (n *NetworkACL) GetCreatedAt() string {
+	if n == nil || n.CreatedAt == nil {
+		return ""
+	}
+	return *n.CreatedAt
+}
+
+// GetDescription returns the Description field if it's non-nil, zero value otherwise.
+func (n *NetworkACL) GetDescription() string {
+	if n == nil || n.Description == nil {
+		return ""
+	}
+	return *n.Description
+}
+
+// GetID returns the ID field if it's non-nil, zero value otherwise.
+func (n *NetworkACL) GetID() string {
+	if n == nil || n.ID == nil {
+		return ""
+	}
+	return *n.ID
+}
+
+// GetPriority returns the Priority field if it's non-nil, zero value otherwise.
+func (n *NetworkACL) GetPriority() int {
+	if n == nil || n.Priority == nil {
+		return 0
+	}
+	return *n.Priority
+}
+
+// GetRule returns the Rule field.
+func (n *NetworkACL) GetRule() *NetworkACLRule {
+	if n == nil {
+		return nil
+	}
+	return n.Rule
+}
+
+// GetUpdatedAt returns the UpdatedAt field if it's non-nil, zero value otherwise.
+func (n *NetworkACL) GetUpdatedAt() string {
+	if n == nil || n.UpdatedAt == nil {
+		return ""
+	}
+	return *n.UpdatedAt
+}
+
+// String returns a string representation of NetworkACL.
+func (n *NetworkACL) String() string {
+	return Stringify(n)
+}
+
+// GetAction returns the Action field.
+func (n *NetworkACLRule) GetAction() *NetworkACLRuleAction {
+	if n == nil {
+		return nil
+	}
+	return n.Action
+}
+
+// GetMatch returns the Match field.
+func (n *NetworkACLRule) GetMatch() *NetworkACLRuleMatch {
+	if n == nil {
+		return nil
+	}
+	return n.Match
+}
+
+// GetNotMatch returns the NotMatch field.
+func (n *NetworkACLRule) GetNotMatch() *NetworkACLRuleMatch {
+	if n == nil {
+		return nil
+	}
+	return n.NotMatch
+}
+
+// GetScope returns the Scope field if it's non-nil, zero value otherwise.
+func (n *NetworkACLRule) GetScope() string {
+	if n == nil || n.Scope == nil {
+		return ""
+	}
+	return *n.Scope
+}
+
+// String returns a string representation of NetworkACLRule.
+func (n *NetworkACLRule) String() string {
+	return Stringify(n)
+}
+
+// GetAllow returns the Allow field if it's non-nil, zero value otherwise.
+func (n *NetworkACLRuleAction) GetAllow() bool {
+	if n == nil || n.Allow == nil {
+		return false
+	}
+	return *n.Allow
+}
+
+// GetBlock returns the Block field if it's non-nil, zero value otherwise.
+func (n *NetworkACLRuleAction) GetBlock() bool {
+	if n == nil || n.Block == nil {
+		return false
+	}
+	return *n.Block
+}
+
+// GetLog returns the Log field if it's non-nil, zero value otherwise.
+func (n *NetworkACLRuleAction) GetLog() bool {
+	if n == nil || n.Log == nil {
+		return false
+	}
+	return *n.Log
+}
+
+// GetRedirect returns the Redirect field if it's non-nil, zero value otherwise.
+func (n *NetworkACLRuleAction) GetRedirect() bool {
+	if n == nil || n.Redirect == nil {
+		return false
+	}
+	return *n.Redirect
+}
+
+// GetRedirectURI returns the RedirectURI field if it's non-nil, zero value otherwise.
+func (n *NetworkACLRuleAction) GetRedirectURI() string {
+	if n == nil || n.RedirectURI == nil {
+		return ""
+	}
+	return *n.RedirectURI
+}
+
+// String returns a string representation of NetworkACLRuleAction.
+func (n *NetworkACLRuleAction) String() string {
+	return Stringify(n)
+}
+
+// GetAnonymousProxy returns the AnonymousProxy field if it's non-nil, zero value otherwise.
+func (n *NetworkACLRuleMatch) GetAnonymousProxy() bool {
+	if n == nil || n.AnonymousProxy == nil {
+		return false
+	}
+	return *n.AnonymousProxy
+}
+
+// GetGeoCountryCodes returns the GeoCountryCodes field if it's non-nil, zero value otherwise.
+func (n *NetworkACLRuleMatch) GetGeoCountryCodes() []string {
+	if n == nil || n.GeoCountryCodes == nil {
+		return nil
+	}
+	return *n.GeoCountryCodes
+}
+
+// GetGeoSubdivisionCodes returns the GeoSubdivisionCodes field if it's non-nil, zero value otherwise.
+func (n *NetworkACLRuleMatch) GetGeoSubdivisionCodes() []string {
+	if n == nil || n.GeoSubdivisionCodes == nil {
+		return nil
+	}
+	return *n.GeoSubdivisionCodes
+}
+
+// GetIPv4Cidrs returns the IPv4Cidrs field if it's non-nil, zero value otherwise.
+func (n *NetworkACLRuleMatch) GetIPv4Cidrs() []string {
+	if n == nil || n.IPv4Cidrs == nil {
+		return nil
+	}
+	return *n.IPv4Cidrs
+}
+
+// GetIPv6Cidrs returns the IPv6Cidrs field if it's non-nil, zero value otherwise.
+func (n *NetworkACLRuleMatch) GetIPv6Cidrs() []string {
+	if n == nil || n.IPv6Cidrs == nil {
+		return nil
+	}
+	return *n.IPv6Cidrs
+}
+
+// GetJa3Fingerprints returns the Ja3Fingerprints field if it's non-nil, zero value otherwise.
+func (n *NetworkACLRuleMatch) GetJa3Fingerprints() []string {
+	if n == nil || n.Ja3Fingerprints == nil {
+		return nil
+	}
+	return *n.Ja3Fingerprints
+}
+
+// GetJa4Fingerprints returns the Ja4Fingerprints field if it's non-nil, zero value otherwise.
+func (n *NetworkACLRuleMatch) GetJa4Fingerprints() []string {
+	if n == nil || n.Ja4Fingerprints == nil {
+		return nil
+	}
+	return *n.Ja4Fingerprints
+}
+
+// GetUserAgents returns the UserAgents field if it's non-nil, zero value otherwise.
+func (n *NetworkACLRuleMatch) GetUserAgents() []string {
+	if n == nil || n.UserAgents == nil {
+		return nil
+	}
+	return *n.UserAgents
+}
+
+// String returns a string representation of NetworkACLRuleMatch.
+func (n *NetworkACLRuleMatch) String() string {
+	return Stringify(n)
 }
 
 // GetAccount returns the Account field if it's non-nil, zero value otherwise.
@@ -8535,6 +9587,14 @@ func (o *Organization) GetName() string {
 		return ""
 	}
 	return *o.Name
+}
+
+// GetTokenQuota returns the TokenQuota field.
+func (o *Organization) GetTokenQuota() *TokenQuota {
+	if o == nil {
+		return nil
+	}
+	return o.TokenQuota
 }
 
 // String returns a string representation of Organization.
@@ -9091,6 +10151,14 @@ func (p *PromptRendering) GetDefaultHeadTagsDisabled() bool {
 	return *p.DefaultHeadTagsDisabled
 }
 
+// GetFilters returns the Filters field.
+func (p *PromptRendering) GetFilters() *PromptRenderingFilters {
+	if p == nil {
+		return nil
+	}
+	return p.Filters
+}
+
 // GetPrompt returns the Prompt field.
 func (p *PromptRendering) GetPrompt() *PromptType {
 	if p == nil {
@@ -9123,8 +10191,79 @@ func (p *PromptRendering) GetTenant() string {
 	return *p.Tenant
 }
 
+// GetUsePageTemplate returns the UsePageTemplate field if it's non-nil, zero value otherwise.
+func (p *PromptRendering) GetUsePageTemplate() bool {
+	if p == nil || p.UsePageTemplate == nil {
+		return false
+	}
+	return *p.UsePageTemplate
+}
+
 // String returns a string representation of PromptRendering.
 func (p *PromptRendering) String() string {
+	return Stringify(p)
+}
+
+// GetID returns the ID field if it's non-nil, zero value otherwise.
+func (p *PromptRenderingFilter) GetID() string {
+	if p == nil || p.ID == nil {
+		return ""
+	}
+	return *p.ID
+}
+
+// GetMetadata returns the Metadata field if it's non-nil, zero value otherwise.
+func (p *PromptRenderingFilter) GetMetadata() map[string]interface{} {
+	if p == nil || p.Metadata == nil {
+		return map[string]interface{}{}
+	}
+	return *p.Metadata
+}
+
+// String returns a string representation of PromptRenderingFilter.
+func (p *PromptRenderingFilter) String() string {
+	return Stringify(p)
+}
+
+// GetClients returns the Clients field if it's non-nil, zero value otherwise.
+func (p *PromptRenderingFilters) GetClients() []PromptRenderingFilter {
+	if p == nil || p.Clients == nil {
+		return nil
+	}
+	return *p.Clients
+}
+
+// GetDomains returns the Domains field if it's non-nil, zero value otherwise.
+func (p *PromptRenderingFilters) GetDomains() []PromptRenderingFilter {
+	if p == nil || p.Domains == nil {
+		return nil
+	}
+	return *p.Domains
+}
+
+// GetMatchType returns the MatchType field if it's non-nil, zero value otherwise.
+func (p *PromptRenderingFilters) GetMatchType() string {
+	if p == nil || p.MatchType == nil {
+		return ""
+	}
+	return *p.MatchType
+}
+
+// GetOrganizations returns the Organizations field if it's non-nil, zero value otherwise.
+func (p *PromptRenderingFilters) GetOrganizations() []PromptRenderingFilter {
+	if p == nil || p.Organizations == nil {
+		return nil
+	}
+	return *p.Organizations
+}
+
+// String returns a string representation of PromptRenderingFilters.
+func (p *PromptRenderingFilters) String() string {
+	return Stringify(p)
+}
+
+// String returns a string representation of PromptRenderingList.
+func (p *PromptRenderingList) String() string {
 	return Stringify(p)
 }
 
@@ -9559,6 +10698,37 @@ func (r *ResourceServerTokenEncryptionKey) String() string {
 	return Stringify(r)
 }
 
+// String returns a string representation of RetryStrategy.
+func (r *RetryStrategy) String() string {
+	return Stringify(r)
+}
+
+// GetEnabled returns the Enabled field if it's non-nil, zero value otherwise.
+func (r *RiskAssessmentSettings) GetEnabled() bool {
+	if r == nil || r.Enabled == nil {
+		return false
+	}
+	return *r.Enabled
+}
+
+// String returns a string representation of RiskAssessmentSettings.
+func (r *RiskAssessmentSettings) String() string {
+	return Stringify(r)
+}
+
+// GetRememberFor returns the RememberFor field if it's non-nil, zero value otherwise.
+func (r *RiskAssessmentSettingsNewDevice) GetRememberFor() int {
+	if r == nil || r.RememberFor == nil {
+		return 0
+	}
+	return *r.RememberFor
+}
+
+// String returns a string representation of RiskAssessmentSettingsNewDevice.
+func (r *RiskAssessmentSettingsNewDevice) String() string {
+	return Stringify(r)
+}
+
 // GetURL returns the URL field if it's non-nil, zero value otherwise.
 func (r *RMSClientAddon) GetURL() string {
 	if r == nil || r.URL == nil {
@@ -9810,6 +10980,14 @@ func (s *SAML2ClientAddon) GetDigestAlgorithm() string {
 		return ""
 	}
 	return *s.DigestAlgorithm
+}
+
+// GetFlexibleMappings returns the FlexibleMappings map if it's non-nil, an empty map otherwise.
+func (s *SAML2ClientAddon) GetFlexibleMappings() map[string]interface{} {
+	if s == nil || s.FlexibleMappings == nil {
+		return map[string]interface{}{}
+	}
+	return s.FlexibleMappings
 }
 
 // GetIncludeAttributeNameFormat returns the IncludeAttributeNameFormat field if it's non-nil, zero value otherwise.
@@ -10257,6 +11435,14 @@ func (s *SelfServiceProfileTicket) GetConnectionID() string {
 	return *s.ConnectionID
 }
 
+// GetDomainAliasesConfig returns the DomainAliasesConfig field.
+func (s *SelfServiceProfileTicket) GetDomainAliasesConfig() *SelfServiceProfileTicketDomainAliasesConfig {
+	if s == nil {
+		return nil
+	}
+	return s.DomainAliasesConfig
+}
+
 // GetEnabledClients returns the EnabledClients field if it's non-nil, zero value otherwise.
 func (s *SelfServiceProfileTicket) GetEnabledClients() []string {
 	if s == nil || s.EnabledClients == nil {
@@ -10347,8 +11533,66 @@ func (s *SelfServiceProfileTicketConnectionConfigOptions) GetIconURL() string {
 	return *s.IconURL
 }
 
+// GetIDPInitiated returns the IDPInitiated field.
+func (s *SelfServiceProfileTicketConnectionConfigOptions) GetIDPInitiated() *SelfServiceProfileTicketConnectionConfigOptionsIDPInitiated {
+	if s == nil {
+		return nil
+	}
+	return s.IDPInitiated
+}
+
 // String returns a string representation of SelfServiceProfileTicketConnectionConfigOptions.
 func (s *SelfServiceProfileTicketConnectionConfigOptions) String() string {
+	return Stringify(s)
+}
+
+// GetClientAuthorizeQuery returns the ClientAuthorizeQuery field if it's non-nil, zero value otherwise.
+func (s *SelfServiceProfileTicketConnectionConfigOptionsIDPInitiated) GetClientAuthorizeQuery() string {
+	if s == nil || s.ClientAuthorizeQuery == nil {
+		return ""
+	}
+	return *s.ClientAuthorizeQuery
+}
+
+// GetClientID returns the ClientID field if it's non-nil, zero value otherwise.
+func (s *SelfServiceProfileTicketConnectionConfigOptionsIDPInitiated) GetClientID() string {
+	if s == nil || s.ClientID == nil {
+		return ""
+	}
+	return *s.ClientID
+}
+
+// GetClientProtocol returns the ClientProtocol field if it's non-nil, zero value otherwise.
+func (s *SelfServiceProfileTicketConnectionConfigOptionsIDPInitiated) GetClientProtocol() string {
+	if s == nil || s.ClientProtocol == nil {
+		return ""
+	}
+	return *s.ClientProtocol
+}
+
+// GetEnabled returns the Enabled field if it's non-nil, zero value otherwise.
+func (s *SelfServiceProfileTicketConnectionConfigOptionsIDPInitiated) GetEnabled() bool {
+	if s == nil || s.Enabled == nil {
+		return false
+	}
+	return *s.Enabled
+}
+
+// String returns a string representation of SelfServiceProfileTicketConnectionConfigOptionsIDPInitiated.
+func (s *SelfServiceProfileTicketConnectionConfigOptionsIDPInitiated) String() string {
+	return Stringify(s)
+}
+
+// GetDomainVerification returns the DomainVerification field if it's non-nil, zero value otherwise.
+func (s *SelfServiceProfileTicketDomainAliasesConfig) GetDomainVerification() string {
+	if s == nil || s.DomainVerification == nil {
+		return ""
+	}
+	return *s.DomainVerification
+}
+
+// String returns a string representation of SelfServiceProfileTicketDomainAliasesConfig.
+func (s *SelfServiceProfileTicketDomainAliasesConfig) String() string {
 	return Stringify(s)
 }
 
@@ -10626,6 +11870,59 @@ func (s *SessionDevice) GetLastUserAgent() string {
 
 // String returns a string representation of SessionDevice.
 func (s *SessionDevice) String() string {
+	return Stringify(s)
+}
+
+// GetAllowedAuthenticationMethods returns the AllowedAuthenticationMethods field if it's non-nil, zero value otherwise.
+func (s *SessionTransfer) GetAllowedAuthenticationMethods() []string {
+	if s == nil || s.AllowedAuthenticationMethods == nil {
+		return nil
+	}
+	return *s.AllowedAuthenticationMethods
+}
+
+// GetAllowRefreshToken returns the AllowRefreshToken field if it's non-nil, zero value otherwise.
+func (s *SessionTransfer) GetAllowRefreshToken() bool {
+	if s == nil || s.AllowRefreshToken == nil {
+		return false
+	}
+	return *s.AllowRefreshToken
+}
+
+// GetCanCreateSessionTransferToken returns the CanCreateSessionTransferToken field if it's non-nil, zero value otherwise.
+func (s *SessionTransfer) GetCanCreateSessionTransferToken() bool {
+	if s == nil || s.CanCreateSessionTransferToken == nil {
+		return false
+	}
+	return *s.CanCreateSessionTransferToken
+}
+
+// GetEnforceCascadeRevocation returns the EnforceCascadeRevocation field if it's non-nil, zero value otherwise.
+func (s *SessionTransfer) GetEnforceCascadeRevocation() bool {
+	if s == nil || s.EnforceCascadeRevocation == nil {
+		return false
+	}
+	return *s.EnforceCascadeRevocation
+}
+
+// GetEnforceDeviceBinding returns the EnforceDeviceBinding field if it's non-nil, zero value otherwise.
+func (s *SessionTransfer) GetEnforceDeviceBinding() string {
+	if s == nil || s.EnforceDeviceBinding == nil {
+		return ""
+	}
+	return *s.EnforceDeviceBinding
+}
+
+// GetEnforceOnlineRefreshTokens returns the EnforceOnlineRefreshTokens field if it's non-nil, zero value otherwise.
+func (s *SessionTransfer) GetEnforceOnlineRefreshTokens() bool {
+	if s == nil || s.EnforceOnlineRefreshTokens == nil {
+		return false
+	}
+	return *s.EnforceOnlineRefreshTokens
+}
+
+// String returns a string representation of SessionTransfer.
+func (s *SessionTransfer) String() string {
 	return Stringify(s)
 }
 
@@ -10920,6 +12217,14 @@ func (t *Tenant) GetDefaultRedirectionURI() string {
 	return *t.DefaultRedirectionURI
 }
 
+// GetDefaultTokenQuota returns the DefaultTokenQuota field.
+func (t *Tenant) GetDefaultTokenQuota() *TenantDefaultTokenQuota {
+	if t == nil {
+		return nil
+	}
+	return t.DefaultTokenQuota
+}
+
 // GetDeviceFlow returns the DeviceFlow field.
 func (t *Tenant) GetDeviceFlow() *TenantDeviceFlow {
 	if t == nil {
@@ -10982,6 +12287,14 @@ func (t *Tenant) GetMTLS() *TenantMTLSConfiguration {
 		return nil
 	}
 	return t.MTLS
+}
+
+// GetOIDCLogout returns the OIDCLogout field.
+func (t *Tenant) GetOIDCLogout() *TenantOIDCLogout {
+	if t == nil {
+		return nil
+	}
+	return t.OIDCLogout
 }
 
 // GetPictureURL returns the PictureURL field if it's non-nil, zero value otherwise.
@@ -11087,6 +12400,27 @@ func (t *TenantChangePassword) GetHTML() string {
 
 // String returns a string representation of TenantChangePassword.
 func (t *TenantChangePassword) String() string {
+	return Stringify(t)
+}
+
+// GetClients returns the Clients field.
+func (t *TenantDefaultTokenQuota) GetClients() *TokenQuota {
+	if t == nil {
+		return nil
+	}
+	return t.Clients
+}
+
+// GetOrganizations returns the Organizations field.
+func (t *TenantDefaultTokenQuota) GetOrganizations() *TokenQuota {
+	if t == nil {
+		return nil
+	}
+	return t.Organizations
+}
+
+// String returns a string representation of TenantDefaultTokenQuota.
+func (t *TenantDefaultTokenQuota) String() string {
 	return Stringify(t)
 }
 
@@ -11403,6 +12737,19 @@ func (t *TenantMTLSConfiguration) String() string {
 	return Stringify(t)
 }
 
+// GetOIDCResourceProviderLogoutEndSessionEndpointDiscovery returns the OIDCResourceProviderLogoutEndSessionEndpointDiscovery field if it's non-nil, zero value otherwise.
+func (t *TenantOIDCLogout) GetOIDCResourceProviderLogoutEndSessionEndpointDiscovery() bool {
+	if t == nil || t.OIDCResourceProviderLogoutEndSessionEndpointDiscovery == nil {
+		return false
+	}
+	return *t.OIDCResourceProviderLogoutEndSessionEndpointDiscovery
+}
+
+// String returns a string representation of TenantOIDCLogout.
+func (t *TenantOIDCLogout) String() string {
+	return Stringify(t)
+}
+
 // GetMode returns the Mode field if it's non-nil, zero value otherwise.
 func (t *TenantSessionCookie) GetMode() string {
 	if t == nil || t.Mode == nil {
@@ -11566,6 +12913,114 @@ func (t *TLSClientAuth) GetCredentials() []Credential {
 
 // String returns a string representation of TLSClientAuth.
 func (t *TLSClientAuth) String() string {
+	return Stringify(t)
+}
+
+// GetActionID returns the ActionID field if it's non-nil, zero value otherwise.
+func (t *TokenExchangeProfile) GetActionID() string {
+	if t == nil || t.ActionID == nil {
+		return ""
+	}
+	return *t.ActionID
+}
+
+// GetCreatedAt returns the CreatedAt field if it's non-nil, zero value otherwise.
+func (t *TokenExchangeProfile) GetCreatedAt() time.Time {
+	if t == nil || t.CreatedAt == nil {
+		return time.Time{}
+	}
+	return *t.CreatedAt
+}
+
+// GetID returns the ID field if it's non-nil, zero value otherwise.
+func (t *TokenExchangeProfile) GetID() string {
+	if t == nil || t.ID == nil {
+		return ""
+	}
+	return *t.ID
+}
+
+// GetName returns the Name field if it's non-nil, zero value otherwise.
+func (t *TokenExchangeProfile) GetName() string {
+	if t == nil || t.Name == nil {
+		return ""
+	}
+	return *t.Name
+}
+
+// GetSubjectTokenType returns the SubjectTokenType field if it's non-nil, zero value otherwise.
+func (t *TokenExchangeProfile) GetSubjectTokenType() string {
+	if t == nil || t.SubjectTokenType == nil {
+		return ""
+	}
+	return *t.SubjectTokenType
+}
+
+// GetType returns the Type field if it's non-nil, zero value otherwise.
+func (t *TokenExchangeProfile) GetType() string {
+	if t == nil || t.Type == nil {
+		return ""
+	}
+	return *t.Type
+}
+
+// GetUpdatedAt returns the UpdatedAt field if it's non-nil, zero value otherwise.
+func (t *TokenExchangeProfile) GetUpdatedAt() time.Time {
+	if t == nil || t.UpdatedAt == nil {
+		return time.Time{}
+	}
+	return *t.UpdatedAt
+}
+
+// String returns a string representation of TokenExchangeProfile.
+func (t *TokenExchangeProfile) String() string {
+	return Stringify(t)
+}
+
+// String returns a string representation of TokenExchangeProfileList.
+func (t *TokenExchangeProfileList) String() string {
+	return Stringify(t)
+}
+
+// GetClientCredentials returns the ClientCredentials field.
+func (t *TokenQuota) GetClientCredentials() *TokenQuotaClientCredentials {
+	if t == nil {
+		return nil
+	}
+	return t.ClientCredentials
+}
+
+// String returns a string representation of TokenQuota.
+func (t *TokenQuota) String() string {
+	return Stringify(t)
+}
+
+// GetEnforce returns the Enforce field if it's non-nil, zero value otherwise.
+func (t *TokenQuotaClientCredentials) GetEnforce() bool {
+	if t == nil || t.Enforce == nil {
+		return false
+	}
+	return *t.Enforce
+}
+
+// GetPerDay returns the PerDay field if it's non-nil, zero value otherwise.
+func (t *TokenQuotaClientCredentials) GetPerDay() int {
+	if t == nil || t.PerDay == nil {
+		return 0
+	}
+	return *t.PerDay
+}
+
+// GetPerHour returns the PerHour field if it's non-nil, zero value otherwise.
+func (t *TokenQuotaClientCredentials) GetPerHour() int {
+	if t == nil || t.PerHour == nil {
+		return 0
+	}
+	return *t.PerHour
+}
+
+// String returns a string representation of TokenQuotaClientCredentials.
+func (t *TokenQuotaClientCredentials) String() string {
 	return Stringify(t)
 }
 
@@ -12025,6 +13480,19 @@ func (u *UserRecoveryCode) GetRecoveryCode() string {
 
 // String returns a string representation of UserRecoveryCode.
 func (u *UserRecoveryCode) String() string {
+	return Stringify(u)
+}
+
+// GetConnection returns the Connection field if it's non-nil, zero value otherwise.
+func (u *UserRiskAssessmentAssessor) GetConnection() string {
+	if u == nil || u.Connection == nil {
+		return ""
+	}
+	return *u.Connection
+}
+
+// String returns a string representation of UserRiskAssessmentAssessor.
+func (u *UserRiskAssessmentAssessor) String() string {
 	return Stringify(u)
 }
 

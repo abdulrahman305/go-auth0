@@ -30,6 +30,181 @@ func TestClient_Create(t *testing.T) {
 	})
 }
 
+func TestClient_CreateWithClientRefreshToken(t *testing.T) {
+	configureHTTPTestRecordings(t)
+
+	// Create a Resource Server
+	resourceServer := &ResourceServer{
+		Name:       auth0.Stringf("Test Resource Server (%s)", time.Now().Format(time.StampMilli)),
+		Identifier: auth0.String("https://mrrt"),
+		Scopes: &[]ResourceServerScope{
+			{
+				Description: auth0.String("This is just a test client."),
+				Value:       auth0.String("create:bar"),
+			},
+			{
+				Description: auth0.String("This is just a test client."),
+				Value:       auth0.String("read:bar"),
+			},
+		},
+		SkipConsentForVerifiableFirstPartyClients: auth0.Bool(true),
+		AllowOfflineAccess:                        auth0.Bool(true),
+	}
+
+	err := api.ResourceServer.Create(context.Background(), resourceServer)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, resourceServer.GetID())
+	t.Cleanup(func() {
+		cleanupResourceServer(t, resourceServer.GetID())
+	})
+
+	// Create a Client with Refresh Token
+	expectedClient := &Client{
+		Name:         auth0.Stringf("Test Client (%s)", time.Now().Format(time.StampMilli)),
+		Description:  auth0.String("This is just a test client."),
+		IsFirstParty: auth0.Bool(true),
+		RefreshToken: &ClientRefreshToken{
+			ExpirationType: auth0.String("expiring"),
+			RotationType:   auth0.String("non-rotating"),
+			Policies: &[]ClientRefreshTokenPolicy{
+				{
+					Audience: auth0.String(resourceServer.GetIdentifier()),
+					Scope:    &[]string{"create:bar", "read:bar"},
+				},
+			},
+		},
+	}
+	err = api.Client.Create(context.Background(), expectedClient)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, expectedClient.GetClientID())
+	actualClient, err := api.Client.Read(context.Background(), expectedClient.GetClientID())
+	assert.NoError(t, err)
+	assert.Equal(t, expectedClient.GetRefreshToken(), actualClient.GetRefreshToken())
+	t.Cleanup(func() {
+		cleanupClient(t, expectedClient.GetClientID())
+	})
+}
+
+func TestClientManager_ReadEnabledConnections(t *testing.T) {
+	configureHTTPTestRecordings(t)
+
+	expectedClient := givenAClient(t)
+	actualConnections, err := api.Client.ReadEnabledConnections(context.Background(), expectedClient.GetClientID())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(actualConnections.Connections))
+
+	expectedConnection := givenAOktaConnection(t)
+	payload := []ConnectionEnabledClient{
+		{
+			ClientID: expectedClient.ClientID,
+			Status:   auth0.Bool(true),
+		},
+	}
+	err = api.Connection.UpdateEnabledClients(context.Background(), expectedConnection.GetID(), payload)
+
+	assert.NoError(t, err)
+	actualConnections, err = api.Client.ReadEnabledConnections(context.Background(), expectedClient.GetClientID())
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(actualConnections.Connections))
+	assert.Equal(t, expectedConnection.GetID(), actualConnections.Connections[0].GetID())
+}
+
+func TestClient_CreateWithTokenExchange(t *testing.T) {
+	configureHTTPTestRecordings(t)
+
+	expectedClient := &Client{
+		Name:        auth0.Stringf("Test Client (%s)", time.Now().Format(time.StampMilli)),
+		Description: auth0.String("This is just a test client."),
+		TokenExchange: &ClientTokenExchange{
+			AllowAnyProfileOfType: &[]string{"custom_authentication"},
+		},
+		OIDCConformant: auth0.Bool(true),
+	}
+
+	err := api.Client.Create(context.Background(), expectedClient)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, expectedClient.GetClientID())
+	actualClient, err := api.Client.Read(context.Background(), expectedClient.GetClientID())
+	assert.NoError(t, err)
+	assert.Equal(t, expectedClient.GetTokenExchange(), actualClient.GetTokenExchange())
+	t.Cleanup(func() {
+		cleanupClient(t, expectedClient.GetClientID())
+	})
+}
+
+func TestClient_SessionTransfer(t *testing.T) {
+	configureHTTPTestRecordings(t)
+
+	ctx := context.Background()
+
+	clientName := auth0.Stringf("Test Client SessionTransfer (%s)", time.Now().Format(time.StampMilli))
+	expectedClient := &Client{
+		Name:        clientName,
+		Description: auth0.String("This is a test client with Session Transfer."),
+		SessionTransfer: &SessionTransfer{
+			CanCreateSessionTransferToken: auth0.Bool(true),
+			AllowedAuthenticationMethods:  &[]string{"cookie", "query"},
+			EnforceDeviceBinding:          auth0.String("ip"),
+			AllowRefreshToken:             auth0.Bool(true),
+			EnforceCascadeRevocation:      auth0.Bool(true),
+			EnforceOnlineRefreshTokens:    auth0.Bool(true),
+		},
+	}
+
+	// Create client
+	require.NoError(t, api.Client.Create(ctx, expectedClient))
+	require.NotEmpty(t, expectedClient.GetClientID())
+
+	t.Cleanup(func() {
+		cleanupClient(t, expectedClient.GetClientID())
+	})
+
+	// Verify creation
+	created, err := api.Client.Read(ctx, expectedClient.GetClientID())
+	require.NoError(t, err)
+	require.NotNil(t, created.SessionTransfer)
+	assert.Equal(t, expectedClient.GetSessionTransfer(), created.GetSessionTransfer())
+
+	// Update session transfer
+	created.SessionTransfer = &SessionTransfer{
+		CanCreateSessionTransferToken: auth0.Bool(false),
+		AllowedAuthenticationMethods:  &[]string{"cookie"},
+		EnforceDeviceBinding:          auth0.String("none"),
+		AllowRefreshToken:             auth0.Bool(false),
+		EnforceCascadeRevocation:      auth0.Bool(false),
+		EnforceOnlineRefreshTokens:    auth0.Bool(false),
+	}
+
+	// Strip fields not allowed on update
+	created.ClientID = nil
+	created.SigningKeys = nil
+
+	if created.JWTConfiguration != nil {
+		created.JWTConfiguration.SecretEncoded = nil
+	}
+
+	require.NoError(t, api.Client.Update(ctx, expectedClient.GetClientID(), created))
+
+	// Verify update
+	updated, err := api.Client.Read(ctx, expectedClient.GetClientID())
+	require.NoError(t, err)
+	require.NotNil(t, updated.SessionTransfer)
+	assert.Equal(t, created.GetSessionTransfer(), updated.GetSessionTransfer())
+
+	// Remove session transfer via PATCH
+	type clientPatch struct {
+		SessionTransfer *SessionTransfer `json:"session_transfer"`
+	}
+
+	patch := &clientPatch{SessionTransfer: nil}
+	require.NoError(t, api.Request(ctx, http.MethodPatch, api.URI("clients", expectedClient.GetClientID()), patch))
+
+	// Verify removal
+	final, err := api.Client.Read(ctx, expectedClient.GetClientID())
+	require.NoError(t, err)
+	assert.Nil(t, final.GetSessionTransfer())
+}
+
 func TestClient_CreateWithDefaultOrg(t *testing.T) {
 	configureHTTPTestRecordings(t)
 
@@ -348,27 +523,280 @@ func TestClient_RotateSecret(t *testing.T) {
 func TestClient_CreateWithClientAddons(t *testing.T) {
 	configureHTTPTestRecordings(t)
 
-	expectedClient := &Client{
-		Name:        auth0.Stringf("Test Client Addons (%s)", time.Now().Format(time.StampMilli)),
-		Description: auth0.String("This is just a test client with addons."),
-		Addons: &ClientAddons{
-			SAML2: &SAML2ClientAddon{
-				Audience: auth0.String("my-audience"),
+	t.Run("legacy mappings", func(t *testing.T) {
+		mappings := map[string]string{
+			"email": "User.Email",
+			"name":  "User.Name",
+		}
+		client := &Client{
+			Name:        auth0.Stringf("Test Client Legacy Mappings (%s)", time.Now().Format(time.StampMilli)),
+			Description: auth0.String("Client with legacy mappings."),
+			Addons: &ClientAddons{
+				SAML2: &SAML2ClientAddon{
+					Audience: auth0.String("legacy-audience"),
+					Mappings: &mappings,
+				},
 			},
-			WSFED: &WSFEDClientAddon{},
-		},
-	}
+		}
 
-	err := api.Client.Create(context.Background(), expectedClient)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, expectedClient.GetClientID())
+		err := api.Client.Create(context.Background(), client)
+		require.NoError(t, err)
+		require.NotEmpty(t, client.GetClientID())
+		t.Cleanup(func() { cleanupClient(t, client.GetClientID()) })
 
-	addons := expectedClient.GetAddons()
-	assert.Equal(t, "my-audience", addons.GetSAML2().GetAudience())
-	assert.NotNil(t, addons.GetWSFED())
+		// Assert immediately after creation
+		addons := client.GetAddons()
+		assert.Equal(t, "legacy-audience", addons.GetSAML2().GetAudience())
+		assert.Equal(t, mappings, addons.GetSAML2().GetMappings())
+		assert.NotNil(t, addons.GetSAML2().GetFlexibleMappings())
 
-	t.Cleanup(func() {
-		cleanupClient(t, expectedClient.GetClientID())
+		// Now read back the client from the API and verify the same fields
+		clientRead, err := api.Client.Read(context.Background(), client.GetClientID())
+		require.NoError(t, err)
+
+		addonsRead := clientRead.GetAddons()
+		assert.Equal(t, "legacy-audience", addonsRead.GetSAML2().GetAudience())
+		assert.Equal(t, mappings, addonsRead.GetSAML2().GetMappings())
+		assert.NotNil(t, addonsRead.GetSAML2().GetFlexibleMappings())
+	})
+
+	t.Run("flexible mappings", func(t *testing.T) {
+		flexible := map[string]interface{}{
+			"email": []interface{}{"User.Email", "User.AltEmail"},
+			"name":  "User.Name",
+		}
+		client := &Client{
+			Name:        auth0.Stringf("Test Client Flexible Mappings (%s)", time.Now().Format(time.StampMilli)),
+			Description: auth0.String("Client with flexible mappings."),
+			Addons: &ClientAddons{
+				SAML2: &SAML2ClientAddon{
+					Audience:         auth0.String("flexible-audience"),
+					FlexibleMappings: flexible,
+				},
+			},
+		}
+
+		err := api.Client.Create(context.Background(), client)
+		require.NoError(t, err)
+		require.NotEmpty(t, client.GetClientID())
+		t.Cleanup(func() { cleanupClient(t, client.GetClientID()) })
+
+		// Assert immediately after creation
+		addons := client.GetAddons()
+		assert.Equal(t, "flexible-audience", addons.GetSAML2().GetAudience())
+		assert.Equal(t, flexible, addons.GetSAML2().GetFlexibleMappings())
+		assert.Empty(t, addons.GetSAML2().GetMappings())
+
+		// Now read back the client from the API and verify the same fields
+		clientRead, err := api.Client.Read(context.Background(), client.GetClientID())
+		require.NoError(t, err)
+
+		addonsRead := clientRead.GetAddons()
+		assert.Equal(t, "flexible-audience", addonsRead.GetSAML2().GetAudience())
+		assert.Equal(t, flexible, addonsRead.GetSAML2().GetFlexibleMappings())
+		assert.Empty(t, addonsRead.GetSAML2().GetMappings())
+	})
+	t.Run("both legacy and flexible mappings set", func(t *testing.T) {
+		mappings := map[string]string{
+			"email": "User.Email",
+		}
+		flexible := map[string]interface{}{
+			"email": []interface{}{"User.Email", "User.AltEmail"},
+		}
+		client := &Client{
+			Name:        auth0.Stringf("Test Client Both Mappings (%s)", time.Now().Format(time.StampMilli)),
+			Description: auth0.String("Client with both legacy and flexible mappings."),
+			Addons: &ClientAddons{
+				SAML2: &SAML2ClientAddon{
+					Audience:         auth0.String("hybrid-audience"),
+					Mappings:         &mappings,
+					FlexibleMappings: flexible,
+				},
+			},
+		}
+		err := api.Client.Create(context.Background(), client)
+		require.NoError(t, err)
+		require.NotEmpty(t, client.GetClientID())
+		t.Cleanup(func() { cleanupClient(t, client.GetClientID()) })
+
+		client, err = api.Client.Read(context.Background(), client.GetClientID())
+		require.NoError(t, err)
+
+		addons := client.GetAddons()
+		assert.Equal(t, "hybrid-audience", addons.GetSAML2().GetAudience())
+		assert.Equal(t, flexible, addons.GetSAML2().GetFlexibleMappings())
+		assert.Empty(t, addons.GetSAML2().GetMappings())
+	})
+}
+
+func TestClient_SAML2ClientAddonMappings(t *testing.T) {
+	t.Run("Legacy mappings", func(t *testing.T) {
+		legacyMappings := map[string]string{
+			"email": "User.Email",
+			"name":  "User.Name",
+		}
+		saml2 := &SAML2ClientAddon{
+			Mappings: &legacyMappings,
+		}
+
+		// Verify initial getters
+		assert.Equal(t, legacyMappings, saml2.GetMappings())
+		assert.Empty(t, saml2.GetFlexibleMappings())
+
+		// Marshal & unmarshal to check JSON round-trip
+		data, err := json.Marshal(saml2)
+		assert.NoError(t, err)
+
+		var decoded SAML2ClientAddon
+		err = json.Unmarshal(data, &decoded)
+		assert.NoError(t, err)
+
+		assert.Equal(t, legacyMappings, decoded.GetMappings())
+		assert.Equal(t, map[string]interface{}{"email": "User.Email", "name": "User.Name"}, decoded.GetFlexibleMappings())
+	})
+
+	t.Run("Flexible mappings", func(t *testing.T) {
+		flexibleMappings := map[string]interface{}{
+			"email": []interface{}{"User.Email", "User.AltEmail"},
+			"name":  "User.Name",
+		}
+		saml2 := &SAML2ClientAddon{
+			FlexibleMappings: flexibleMappings,
+		}
+
+		// Initial getters
+		assert.Empty(t, saml2.GetMappings())
+		assert.Equal(t, flexibleMappings, saml2.GetFlexibleMappings())
+
+		// Marshal & unmarshal
+		data, err := json.Marshal(saml2)
+		assert.NoError(t, err)
+
+		var decoded SAML2ClientAddon
+		err = json.Unmarshal(data, &decoded)
+		assert.NoError(t, err)
+
+		assert.Empty(t, decoded.GetMappings())
+		assert.Equal(t, flexibleMappings, decoded.GetFlexibleMappings())
+	})
+
+	t.Run("Flexible mappings with string slice", func(t *testing.T) {
+		flexibleMappings := map[string]interface{}{
+			"roles": []interface{}{"admin", "user"},
+		}
+		saml2 := &SAML2ClientAddon{
+			FlexibleMappings: flexibleMappings,
+		}
+		assert.Empty(t, saml2.GetMappings())
+		assert.Equal(t, flexibleMappings, saml2.GetFlexibleMappings())
+
+		data, err := json.Marshal(saml2)
+		assert.NoError(t, err)
+
+		var decoded SAML2ClientAddon
+		err = json.Unmarshal(data, &decoded)
+		assert.NoError(t, err)
+
+		assert.Empty(t, decoded.GetMappings())
+		assert.Equal(t, flexibleMappings, decoded.GetFlexibleMappings())
+	})
+
+	t.Run("Both mappings set - prefer flexible", func(t *testing.T) {
+		legacyMappings := map[string]string{
+			"email": "User.Email",
+		}
+		flexibleMappings := map[string]interface{}{
+			"email": []interface{}{"User.Email", "User.AltEmail"},
+		}
+		saml2 := &SAML2ClientAddon{
+			Mappings:         &legacyMappings,
+			FlexibleMappings: flexibleMappings,
+		}
+
+		// Check initial state
+		assert.Equal(t, flexibleMappings, saml2.GetFlexibleMappings())
+		assert.Equal(t, legacyMappings, saml2.GetMappings())
+
+		// Marshal & unmarshal
+		data, err := json.Marshal(saml2)
+		assert.NoError(t, err)
+
+		var decoded SAML2ClientAddon
+		err = json.Unmarshal(data, &decoded)
+		assert.NoError(t, err)
+
+		assert.Empty(t, decoded.GetMappings()) // Legacy mappings should be ignored
+		assert.Equal(t, flexibleMappings, decoded.GetFlexibleMappings())
+	})
+	t.Run("Invalid mappings type", func(t *testing.T) {
+		input := `{"mappings": "not-an-object"}`
+
+		var decoded SAML2ClientAddon
+		err := json.Unmarshal([]byte(input), &decoded)
+		assert.Error(t, err)
+	})
+	t.Run("Marshal with legacy mappings", func(t *testing.T) {
+		legacyMappings := map[string]string{
+			"email": "User.Email",
+			"name":  "User.Name",
+		}
+		saml2 := &SAML2ClientAddon{
+			Mappings: &legacyMappings,
+		}
+
+		data, err := json.Marshal(saml2)
+		assert.NoError(t, err)
+
+		expectedJSON := `{
+		"mappings": {
+			"email": "User.Email",
+			"name": "User.Name"
+		}}`
+
+		assert.JSONEq(t, expectedJSON, string(data))
+	})
+	t.Run("Marshal with flexible mappings", func(t *testing.T) {
+		flexibleMappings := map[string]interface{}{
+			"email": []interface{}{"User.Email", "User.AltEmail"},
+			"name":  "User.Name",
+		}
+		saml2 := &SAML2ClientAddon{
+			FlexibleMappings: flexibleMappings,
+		}
+
+		data, err := json.Marshal(saml2)
+		assert.NoError(t, err)
+
+		expectedJSON := `{
+		"mappings": {
+			"email": ["User.Email", "User.AltEmail"],
+			"name": "User.Name"
+		}
+	}`
+
+		assert.JSONEq(t, expectedJSON, string(data))
+	})
+
+	t.Run("Marshal with both mappings - prefer flexible", func(t *testing.T) {
+		legacy := map[string]string{"email": "User.Email"}
+		flexible := map[string]interface{}{
+			"email": []interface{}{"User.Email", "User.AltEmail"},
+		}
+		saml2 := &SAML2ClientAddon{
+			Mappings:         &legacy,
+			FlexibleMappings: flexible,
+		}
+
+		data, err := json.Marshal(saml2)
+		assert.NoError(t, err)
+
+		expectedJSON := `{
+		"mappings": {
+			"email": ["User.Email", "User.AltEmail"]
+		}
+	}`
+
+		assert.JSONEq(t, expectedJSON, string(data))
 	})
 }
 

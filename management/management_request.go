@@ -8,9 +8,44 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 )
+
+var compiledWhitelistedPathRegexes = compileWhitelistedPathPatterns()
+
+func compileWhitelistedPathPatterns() []*regexp.Regexp {
+	patterns := []string{
+		`^/api/v2/jobs/verification-email$`,
+		`^/api/v2/tickets/email-verification$`,
+		`^/api/v2/tickets/password-change$`,
+		`^/api/v2/organizations/[^/]+/invitations$`,
+		`^/api/v2/users$`,
+		`^/api/v2/users/[^/]+$`,
+		`^/api/v2/guardian/enrollments/ticket$`,
+	}
+
+	compiled := make([]*regexp.Regexp, len(patterns))
+	for i, pattern := range patterns {
+		compiled[i] = regexp.MustCompile(pattern)
+	}
+
+	return compiled
+}
+
+// isCustomDomainPathWhitelisted checks if the given path is in the whitelist
+// for custom domain header application by matching it against predefined regex patterns.
+// Returns true if the path matches any of the whitelisted patterns, false otherwise.
+func isCustomDomainPathWhitelisted(path string) bool {
+	for _, r := range compiledWhitelistedPathRegexes {
+		if r.MatchString(path) {
+			return true
+		}
+	}
+
+	return false
+}
 
 // URI returns the absolute URL of the Management API with any path segments
 // appended to the end.
@@ -22,7 +57,9 @@ func (m *Management) URI(path ...string) string {
 	}
 
 	const escapedForwardSlash = "%2F"
+
 	var escapedPath []string
+
 	for _, unescapedPath := range path {
 		// Go's url.PathEscape will not escape "/", but some user IDs do have a valid "/" in them.
 		// See https://github.com/golang/go/blob/b55a2fb3b0d67b346bac871737b862f16e5a6447/src/net/url/url.go#L141.
@@ -36,6 +73,23 @@ func (m *Management) URI(path ...string) string {
 	return baseURL.String() + strings.Join(escapedPath, "/")
 }
 
+// methodAllowsBody checks if the HTTP method is one that does not require a
+// request body.
+//
+// This can be used to decide whether to remove an empty object from the
+// request body to fix issues with CDNs like CloudFront.
+//
+// For example:
+// https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/RequestAndResponseBehaviorCustomOrigin.html#RequestCustom-get-body
+func methodAllowsBody(method string) bool {
+	switch method {
+	case http.MethodGet, http.MethodHead, http.MethodOptions:
+		return false
+	default:
+		return true
+	}
+}
+
 // NewRequest returns a new HTTP request. If the payload is not nil it will be
 // encoded as JSON.
 func (m *Management) NewRequest(
@@ -45,17 +99,21 @@ func (m *Management) NewRequest(
 	payload interface{},
 	options ...RequestOption,
 ) (*http.Request, error) {
-	const nullBody = "null\n"
 	var body bytes.Buffer
 
-	if payload != nil {
+	setContentType := false
+
+	if payload != nil && methodAllowsBody(method) {
 		if err := json.NewEncoder(&body).Encode(payload); err != nil {
 			return nil, fmt.Errorf("encoding request payload failed: %w", err)
 		}
-	}
 
-	if body.String() == nullBody {
-		body.Reset()
+		encoded := bytes.TrimSpace(body.Bytes())
+		if !bytes.Equal(encoded, []byte("null")) {
+			setContentType = true
+		} else {
+			body.Reset()
+		}
 	}
 
 	request, err := http.NewRequestWithContext(ctx, method, uri, &body)
@@ -63,7 +121,11 @@ func (m *Management) NewRequest(
 		return nil, err
 	}
 
-	request.Header.Add("Content-Type", "application/json")
+	if setContentType {
+		request.Header.Add("Content-Type", "application/json")
+	}
+
+	m.applyCustomDomainHeader(request, uri)
 
 	for _, option := range options {
 		option.apply(request)
@@ -88,6 +150,25 @@ func (m *Management) Do(req *http.Request) (*http.Response, error) {
 	}
 
 	return response, nil
+}
+
+// applyCustomDomainHeader adds the Auth0-Custom-Domain header to the given HTTP request
+// when the request URI path is in the whitelist for custom domains.
+//
+// If the customDomainHeader is not set or the URI cannot be parsed, this function does nothing.
+func (m *Management) applyCustomDomainHeader(request *http.Request, uri string) {
+	if m.customDomainHeader == "" {
+		return
+	}
+
+	parsedURL, err := url.Parse(uri)
+	if err != nil {
+		return
+	}
+
+	if isCustomDomainPathWhitelisted(parsedURL.Path) {
+		request.Header.Set("Auth0-Custom-Domain", m.customDomainHeader)
+	}
 }
 
 // Request combines NewRequest and Do, while also handling decoding of response payload.
@@ -168,6 +249,7 @@ func applyListDefaults(options []RequestOption) RequestOption {
 	return newRequestOption(func(r *http.Request) {
 		PerPage(50).apply(r)
 		IncludeTotals(true).apply(r)
+
 		for _, option := range options {
 			option.apply(r)
 		}
@@ -177,6 +259,7 @@ func applyListDefaults(options []RequestOption) RequestOption {
 func applyListCheckpointDefaults(options []RequestOption) RequestOption {
 	return newRequestOption(func(r *http.Request) {
 		Take(50).apply(r)
+
 		for _, option := range options {
 			option.apply(r)
 		}
@@ -289,6 +372,9 @@ func Header(key, value string) RequestOption {
 func Body(b []byte) RequestOption {
 	return newRequestOption(func(r *http.Request) {
 		r.Body = io.NopCloser(bytes.NewReader(b))
+		if len(b) > 0 {
+			r.Header.Set("Content-Type", "application/json")
+		}
 	})
 }
 
@@ -298,6 +384,7 @@ func Stringify(v interface{}) string {
 	if err != nil {
 		panic(err)
 	}
+
 	return string(b)
 }
 
@@ -308,5 +395,13 @@ func Sort(sort string) RequestOption {
 		q := r.URL.Query()
 		q.Set("sort", sort)
 		r.URL.RawQuery = q.Encode()
+	})
+}
+
+// CustomDomainHeader sets the 'Auth0-Custom-Domain' header for this request only,
+// overriding any global setting.
+func CustomDomainHeader(domain string) RequestOption {
+	return newRequestOption(func(r *http.Request) {
+		r.Header.Set("Auth0-Custom-Domain", domain)
 	})
 }

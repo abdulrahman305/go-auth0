@@ -4,17 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/url"
 	"reflect"
 	"strings"
 	"time"
-
-	"github.com/google/uuid"
-	"github.com/lestrrat-go/jwx/v2/jwa"
-	"github.com/lestrrat-go/jwx/v2/jwk"
-	"github.com/lestrrat-go/jwx/v2/jwt"
 
 	"github.com/auth0/go-auth0/authentication/oauth"
 	"github.com/auth0/go-auth0/internal/client"
@@ -91,6 +85,7 @@ type UserAddress struct {
 // field on the struct.
 func (u *UserInfoResponse) UnmarshalJSON(b []byte) error {
 	type userInfoWrapper UserInfoResponse
+
 	ui := userInfoWrapper{}
 
 	err := json.Unmarshal(b, &ui)
@@ -106,6 +101,7 @@ func (u *UserInfoResponse) UnmarshalJSON(b []byte) error {
 	typ := reflect.TypeOf(ui)
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
+
 		jsonTag := strings.Split(field.Tag.Get("json"), ",")[0]
 		if jsonTag != "" && jsonTag != "-" {
 			delete(ui.AdditionalClaims, jsonTag)
@@ -152,6 +148,7 @@ func New(ctx context.Context, domain string, options ...Option) (*Authentication
 	if i := strings.Index(domain, "//"); i != -1 {
 		domain = domain[i+2:]
 	}
+
 	domain = "https://" + domain
 
 	u, err := url.Parse(domain)
@@ -209,6 +206,7 @@ func New(ctx context.Context, domain string, options ...Option) (*Authentication
 	if err != nil {
 		return nil, err
 	}
+
 	a.idTokenValidator = validator
 
 	return a, nil
@@ -218,12 +216,13 @@ func New(ctx context.Context, domain string, options ...Option) (*Authentication
 //
 // This endpoint will work only if `openid` was granted as a scope for the access token. The user profile
 // information included in the response depends on the scopes requested. For example, a scope of just openid
-// may return less information than a a scope of `openid profile email`.
+// may return less information than a scope of `openid profile email`.
 //
 // See: https://auth0.com/docs/api/authentication?http#get-user-info
 func (a *Authentication) UserInfo(ctx context.Context, accessToken string, opts ...RequestOption) (user *UserInfoResponse, err error) {
 	opts = append(opts, Header("Authorization", "Bearer "+accessToken))
 	err = a.Request(ctx, "GET", a.URI("userinfo"), nil, &user, opts...)
+
 	return
 }
 
@@ -247,6 +246,7 @@ func (a *Authentication) addClientAuthenticationToURLValues(params oauth.ClientA
 	if params.ClientID == "" {
 		clientID = a.clientID
 	}
+
 	body.Set("client_id", clientID)
 
 	clientSecret := params.ClientSecret
@@ -256,8 +256,14 @@ func (a *Authentication) addClientAuthenticationToURLValues(params oauth.ClientA
 
 	switch {
 	case a.clientAssertionSigningKey != "" && a.clientAssertionSigningAlg != "":
-		clientAssertion, err := createClientAssertion(
-			a.clientAssertionSigningAlg,
+		alg, err := client.DetermineSigningAlgorithm(a.clientAssertionSigningAlg)
+		if err != nil {
+			return err
+		}
+
+		// Using the improved createClientAssertion with a standard lifetime
+		clientAssertion, err := client.CreateClientAssertion(
+			alg,
 			a.clientAssertionSigningKey,
 			clientID,
 			a.url.JoinPath("/").String(),
@@ -268,14 +274,11 @@ func (a *Authentication) addClientAuthenticationToURLValues(params oauth.ClientA
 
 		body.Set("client_assertion", clientAssertion)
 		body.Set("client_assertion_type", "urn:ietf:params:oauth:client-assertion-type:jwt-bearer")
-		break
 	case params.ClientAssertion != "" && params.ClientAssertionType != "":
 		body.Set("client_assertion", params.ClientAssertion)
 		body.Set("client_assertion_type", params.ClientAssertionType)
-		break
 	case clientSecret != "":
 		body.Set("client_secret", clientSecret)
-		break
 	}
 
 	if required && (body.Get("client_secret") == "" && body.Get("client_assertion") == "") {
@@ -292,8 +295,14 @@ func (a *Authentication) addClientAuthenticationToClientAuthStruct(params *oauth
 	}
 
 	if a.clientAssertionSigningKey != "" && a.clientAssertionSigningAlg != "" {
-		clientAssertion, err := createClientAssertion(
-			a.clientAssertionSigningAlg,
+		alg, err := client.DetermineSigningAlgorithm(a.clientAssertionSigningAlg)
+		if err != nil {
+			return err
+		}
+
+		// Using the improved createClientAssertion with a standard lifetime
+		clientAssertion, err := client.CreateClientAssertion(
+			alg,
 			a.clientAssertionSigningKey,
 			params.ClientID,
 			a.url.JoinPath("/").String(),
@@ -313,44 +322,4 @@ func (a *Authentication) addClientAuthenticationToClientAuthStruct(params *oauth
 	}
 
 	return nil
-}
-
-func determineAlg(alg string) (jwa.SignatureAlgorithm, error) {
-	switch alg {
-	case "RS256":
-		return jwa.RS256, nil
-	default:
-		return "", fmt.Errorf("Unsupported client assertion algorithm \"%s\" provided", alg)
-	}
-}
-
-func createClientAssertion(clientAssertionSigningAlg, clientAssertionSigningKey, clientID, domain string) (string, error) {
-	alg, err := determineAlg(clientAssertionSigningAlg)
-	if err != nil {
-		return "", err
-	}
-
-	key, err := jwk.ParseKey([]byte(clientAssertionSigningKey), jwk.WithPEM(true))
-	if err != nil {
-		return "", err
-	}
-
-	token, err := jwt.NewBuilder().
-		IssuedAt(time.Now()).
-		Subject(clientID).
-		JwtID(uuid.New().String()).
-		Issuer(clientID).
-		Audience([]string{domain}).
-		Expiration(time.Now().Add(2 * time.Minute)).
-		Build()
-	if err != nil {
-		return "", err
-	}
-
-	b, err := jwt.Sign(token, jwt.WithKey(alg, key))
-	if err != nil {
-		return "", err
-	}
-
-	return string(b), nil
 }

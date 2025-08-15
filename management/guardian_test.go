@@ -287,10 +287,10 @@ func TestGuardian(t *testing.T) {
 				assert.NoError(t, err)
 
 				actualDirectAPNS, err := api.Guardian.MultiFactor.Push.DirectAPNS(context.Background())
+				// Cannot test `enabled` parameter as we cannot send it due to API limitations.
 				assert.NoError(t, err)
 				assert.Equal(t, expectedDirectAPNS.GetSandbox(), actualDirectAPNS.GetSandbox())
 				assert.Equal(t, expectedDirectAPNS.GetBundleID(), actualDirectAPNS.GetBundleID())
-				// Cannot test enabled parameter as we cannot send it
 			})
 
 			t.Run("DirectFCM", func(t *testing.T) {
@@ -304,6 +304,20 @@ func TestGuardian(t *testing.T) {
 					ServerKey: auth0.String("abc123"),
 				}
 				err = api.Guardian.MultiFactor.Push.UpdateDirectFCM(context.Background(), expectedDirectFCM)
+				assert.NoError(t, err)
+			})
+
+			t.Run("DirectFCMv1", func(t *testing.T) {
+				configureHTTPTestRecordings(t)
+
+				// This is a write only property
+
+				err := error(nil)
+
+				expectedDirectFCMv1 := &MultiFactorPushDirectFCMv1{
+					ServerCredentials: auth0.String("abc123"),
+				}
+				err = api.Guardian.MultiFactor.Push.UpdateDirectFCMv1(context.Background(), expectedDirectFCMv1)
 				assert.NoError(t, err)
 			})
 		})
@@ -482,8 +496,11 @@ func TestGuardian(t *testing.T) {
 			user := givenAUser(t)
 
 			ticket := &CreateEnrollmentTicket{
-				UserID:   user.GetID(),
-				SendMail: false,
+				UserID:                   user.GetID(),
+				Email:                    "jon@example.com",
+				SendMail:                 false,
+				Factor:                   "push-notification",
+				AllowMultipleEnrollments: true,
 			}
 
 			createdTicket, err := api.Guardian.Enrollment.CreateTicket(context.Background(), ticket)
@@ -521,11 +538,13 @@ func getInitialMFAStatus(mfaName string) (bool, error) {
 	}
 
 	enabled := false
+
 	for _, mfa := range mfaList {
 		if mfa.GetName() == mfaName {
 			enabled = mfa.GetEnabled()
 		}
 	}
+
 	return enabled, nil
 }
 
@@ -536,10 +555,12 @@ func assertMFAIsEnabled(t *testing.T, mfaName string) {
 	assert.NoError(t, err)
 
 	enabled := false
+
 	for _, mfa := range mfaList {
 		if mfa.GetName() == mfaName {
 			enabled = mfa.GetEnabled()
 		}
 	}
+
 	assert.True(t, enabled)
 }

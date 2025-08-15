@@ -3,6 +3,7 @@ package management
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/auth0/go-auth0/internal/client"
 )
@@ -48,6 +49,22 @@ func WithClientCredentialsAndAudience(ctx context.Context, clientID, clientSecre
 	}
 }
 
+// WithClientCredentialsPrivateKeyJwt configures management to authenticate using the client
+// credentials with Private Key JWT authentication flow.
+func WithClientCredentialsPrivateKeyJwt(ctx context.Context, clientID, clientAssertionSigningKey, clientAssertionSigningAlg string) Option {
+	return func(m *Management) {
+		m.tokenSource = client.OAuth2ClientCredentialsPrivateKeyJwt(ctx, m.url.String(), clientID, clientAssertionSigningKey, clientAssertionSigningAlg)
+	}
+}
+
+// WithClientCredentialsPrivateKeyJwtAndAudience configures management to authenticate using the client
+// credentials with Private Key JWT authentication flow and custom audience.
+func WithClientCredentialsPrivateKeyJwtAndAudience(ctx context.Context, clientID, clientAssertionSigningKey, clientAssertionSigningAlg, audience string) Option {
+	return func(m *Management) {
+		m.tokenSource = client.OAuth2ClientCredentialsPrivateKeyJwtAndAudience(ctx, m.url.String(), clientID, clientAssertionSigningKey, clientAssertionSigningAlg, audience)
+	}
+}
+
 // WithStaticToken configures management to authenticate using a static
 // authentication token.
 func WithStaticToken(token string) Option {
@@ -84,6 +101,7 @@ func WithAuth0ClientEnvEntry(key string, value string) Option {
 			if m.auth0ClientInfo.Env == nil {
 				m.auth0ClientInfo.Env = map[string]string{}
 			}
+
 			m.auth0ClientInfo.Env[key] = value
 		}
 	}
@@ -98,6 +116,8 @@ func WithNoAuth0ClientInfo() Option {
 }
 
 // WithRetries configures the management client to only retry under the conditions provided.
+//
+// Deprecated: use WithRetryStrategy instead.
 func WithRetries(maxRetries int, statuses []int) Option {
 	return func(m *Management) {
 		m.retryStrategy = client.RetryOptions{
@@ -107,9 +127,36 @@ func WithRetries(maxRetries int, statuses []int) Option {
 	}
 }
 
+// RetryStrategy defines the retry rules that should be followed by the SDK when making requests.
+type RetryStrategy struct {
+	MaxRetries int
+	Statuses   []int
+
+	// PerAttemptTimeout can optionally be set to timeout individual API requests.
+	PerAttemptTimeout time.Duration
+}
+
+// WithRetryStrategy configures the management client to only retry under the conditions provided.
+func WithRetryStrategy(retryStrategy RetryStrategy) Option {
+	return func(m *Management) {
+		m.retryStrategy = client.RetryOptions{
+			MaxRetries:        retryStrategy.MaxRetries,
+			Statuses:          retryStrategy.Statuses,
+			PerAttemptTimeout: retryStrategy.PerAttemptTimeout,
+		}
+	}
+}
+
 // WithNoRetries configures the management client to only retry under the conditions provided.
 func WithNoRetries() Option {
 	return func(m *Management) {
 		m.retryStrategy = client.RetryOptions{}
+	}
+}
+
+// WithCustomDomainHeader sets the custom domain for the Management instance.
+func WithCustomDomainHeader(domain string) Option {
+	return func(m *Management) {
+		m.customDomainHeader = domain
 	}
 }

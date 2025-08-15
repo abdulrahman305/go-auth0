@@ -11,6 +11,24 @@ const (
 	ActionTriggerPostLogin string = "post-login"
 	// ActionTriggerClientCredentials constant.
 	ActionTriggerClientCredentials string = "client-credentials"
+	// ActionTriggerCredentialsExchange constant.
+	ActionTriggerCredentialsExchange string = "credentials-exchange"
+	// ActionTriggerPreUserRegistration constant.
+	ActionTriggerPreUserRegistration string = "pre-user-registration"
+	// ActionTriggerPostUserRegistration constant.
+	ActionTriggerPostUserRegistration string = "post-user-registration"
+	// ActionTriggerPostChangePassword constant.
+	ActionTriggerPostChangePassword string = "post-change-password"
+	// ActionTriggerSendPhoneMessage constant.
+	ActionTriggerSendPhoneMessage string = "send-phone-message"
+	// ActionTriggerCustomPhoneProvider constant.
+	ActionTriggerCustomPhoneProvider string = "custom-phone-provider"
+	// ActionTriggerCustomEmailProvider constant.
+	ActionTriggerCustomEmailProvider string = "custom-email-provider"
+	// ActionTriggerPasswordResetPostChallenge constant.
+	ActionTriggerPasswordResetPostChallenge string = "password-reset-post-challenge"
+	// ActionTriggerCustomTokenExchange constant.
+	ActionTriggerCustomTokenExchange string = "custom-token-exchange" // #nosec
 )
 
 // ActionTrigger is part of a Flow.
@@ -100,6 +118,8 @@ type Action struct {
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 	// The time when this action was updated.
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	// Deploy indicates if the action should be deployed while creating it.
+	Deploy *bool `json:"deploy,omitempty"`
 }
 
 // ActionList is a list of Actions.
@@ -207,6 +227,7 @@ type ActionManager manager
 func applyActionsListDefaults(options []RequestOption) RequestOption {
 	return newRequestOption(func(r *http.Request) {
 		PerPage(50).apply(r)
+
 		for _, option := range options {
 			option.apply(r)
 		}
@@ -228,7 +249,7 @@ func (m *ActionManager) Create(ctx context.Context, a *Action, opts ...RequestOp
 	return m.management.Request(ctx, "POST", m.management.URI("actions", "actions"), a, opts...)
 }
 
-// Retrieve action details.
+// Read retrieves action details.
 //
 // See: https://auth0.com/docs/api/management/v2#!/Actions/get_action
 func (m *ActionManager) Read(ctx context.Context, id string, opts ...RequestOption) (a *Action, err error) {
@@ -285,6 +306,7 @@ func (m *ActionManager) UpdateBindings(ctx context.Context, triggerID string, b 
 	bl := &actionBindingsPerTrigger{
 		Bindings: b,
 	}
+
 	return m.management.Request(ctx, "PATCH", m.management.URI("actions", "triggers", triggerID, "bindings"), &bl, opts...)
 }
 
@@ -322,6 +344,7 @@ func (m *ActionManager) Test(ctx context.Context, id string, payload *ActionTest
 		Payload: payload,
 	}
 	err = m.management.Request(ctx, "POST", m.management.URI("actions", "actions", id, "test"), &r, opts...)
+
 	return
 }
 

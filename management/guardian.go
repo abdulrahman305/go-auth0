@@ -94,10 +94,16 @@ type MultiFactorPushDirectAPNS struct {
 	Enabled  *bool   `json:"enabled,omitempty"`
 }
 
-// MultiFactorPushDirectFCM holds the Google FCM provider configuration.
+// MultiFactorPushDirectFCM holds the legacy Google FCM provider configuration.
 type MultiFactorPushDirectFCM struct {
 	// FCM Server Key
 	ServerKey *string `json:"server_key,omitempty"`
+}
+
+// MultiFactorPushDirectFCMv1 holds the Google FCM provider configuration.
+type MultiFactorPushDirectFCMv1 struct {
+	// FCM Server Credentials
+	ServerCredentials *string `json:"server_credentials,omitempty"`
 }
 
 // MultiFactorProviderTwilio is used for Twilio MultiFactor Authentication.
@@ -132,9 +138,18 @@ type CreateEnrollmentTicket struct {
 	// be sent. If empty, the email will be sent to the user's default email
 	// address.
 	Email string `json:"email,omitempty"`
-	// SendMail indicates whether to send an email to the user to start the
-	// multi-factor authentication enrollment process.
+	// SendMail indicates whether to email the user to start the
+	// multifactor authentication enrollment process.
 	SendMail bool `json:"send_mail,omitempty"`
+	// EmailLocale is used to specify the locale of the enrollment email. Used with send_email.
+	EmailLocale string `json:"email_locale,omitempty"`
+	// Factor specifies which factor the user must enroll with.
+	// Possible values: [push-notification, phone, email, otp, webauthn-roaming, webauthn-platform]
+	// Note: Parameter can only be used with Universal Login; it cannot be used with Classic Login or custom MFA pages.
+	Factor string `json:"factor,omitempty"`
+	// AllowMultipleEnrollments allows a user who has previously enrolled in MFA to enroll with additional factors.
+	// Note: Parameter can only be used with Universal Login; it cannot be used with Classic Login or custom MFA pages.
+	AllowMultipleEnrollments bool `json:"allow_multiple_enrollments,omitempty"`
 }
 
 // EnrollmentTicket holds information on the ticket ID and URL.
@@ -165,6 +180,7 @@ func (m *EnrollmentManager) CreateTicket(ctx context.Context, t *CreateEnrollmen
 
 	var out EnrollmentTicket
 	err = json.NewDecoder(response.Body).Decode(&out)
+
 	return out, err
 }
 
@@ -364,9 +380,16 @@ func (m *MultiFactorPush) UpdateDirectAPNS(ctx context.Context, sc *MultiFactorP
 
 // UpdateDirectFCM updates the Google FCM provider configuration for direct mode.
 //
-// See: https://auth0.com/docs/api/management/v2#!/Guardian/patch_fcm
+// See: https://auth0.com/docs/api/management/v2#!/Guardian/put-fcm
 func (m *MultiFactorPush) UpdateDirectFCM(ctx context.Context, sc *MultiFactorPushDirectFCM, opts ...RequestOption) error {
 	return m.management.Request(ctx, "PUT", m.management.URI("guardian", "factors", "push-notification", "providers", "fcm"), sc, opts...)
+}
+
+// UpdateDirectFCMv1 updates the Google FCM provider configuration for direct mode (v1).
+//
+// See: https://auth0.com/docs/api/management/v2#!/Guardian/put-fcmv-1
+func (m *MultiFactorPush) UpdateDirectFCMv1(ctx context.Context, sc *MultiFactorPushDirectFCMv1, opts ...RequestOption) error {
+	return m.management.Request(ctx, "PUT", m.management.URI("guardian", "factors", "push-notification", "providers", "fcmv1"), sc, opts...)
 }
 
 // AmazonSNS returns the Amazon Web Services (AWS) Simple Notification Service

@@ -140,6 +140,30 @@ type Client struct {
 	RequireProofOfPossession *bool `json:"require_proof_of_possession,omitempty"`
 
 	DefaultOrganization *ClientDefaultOrganization `json:"default_organization,omitempty"`
+
+	TokenExchange *ClientTokenExchange `json:"token_exchange,omitempty"`
+
+	// TokenQuota Token Quota configuration, to configure quotas for token issuance for clients.
+	//
+	// To unset values (set to null), use a PATCH request like this:
+	//
+	// PATCH /api/v2/clients/{id}
+	//
+	// {
+	//	 "token_quota": null
+	// }
+	//
+	// For more details on making custom requests, refer to the Auth0 Go SDK examples:
+	// https://github.com/auth0/go-auth0/blob/main/EXAMPLES.md#providing-a-custom-user-struct
+	TokenQuota *TokenQuota `json:"token_quota,omitempty"`
+
+	// Session Transfer settings for the client - Allows Native to Web SSO
+	SessionTransfer *SessionTransfer `json:"session_transfer,omitempty"`
+}
+
+// ClientTokenExchange allows configuration for token exchange.
+type ClientTokenExchange struct {
+	AllowAnyProfileOfType *[]string `json:"allow_any_profile_of_type,omitempty"`
 }
 
 // ClientDefaultOrganization allows the support for client credentials feature.
@@ -161,38 +185,49 @@ type ClientSignedRequestObject struct {
 func (c *Client) CleanForPatch() {
 	if c.SignedRequestObject != nil && c.SignedRequestObject.Credentials != nil {
 		var credentials []Credential
+
 		for _, cred := range *c.SignedRequestObject.Credentials {
 			if cred.ID != nil && *cred.ID != "" {
 				credentials = append(credentials, Credential{ID: cred.ID})
 			}
 		}
+
 		c.SignedRequestObject.Credentials = &credentials
 	}
+
 	if c.ClientAuthenticationMethods != nil && c.ClientAuthenticationMethods.TLSClientAuth != nil && c.ClientAuthenticationMethods.TLSClientAuth.Credentials != nil {
 		var credentials []Credential
+
 		for _, cred := range *c.ClientAuthenticationMethods.TLSClientAuth.Credentials {
 			if cred.ID != nil && *cred.ID != "" {
 				credentials = append(credentials, Credential{ID: cred.ID})
 			}
 		}
+
 		c.ClientAuthenticationMethods.TLSClientAuth.Credentials = &credentials
 	}
+
 	if c.ClientAuthenticationMethods != nil && c.ClientAuthenticationMethods.SelfSignedTLSClientAuth != nil && c.ClientAuthenticationMethods.SelfSignedTLSClientAuth.Credentials != nil {
 		var credentials []Credential
+
 		for _, cred := range *c.ClientAuthenticationMethods.SelfSignedTLSClientAuth.Credentials {
 			if cred.ID != nil && *cred.ID != "" {
 				credentials = append(credentials, Credential{ID: cred.ID})
 			}
 		}
+
 		c.ClientAuthenticationMethods.SelfSignedTLSClientAuth.Credentials = &credentials
 	}
+
 	if c.ClientAuthenticationMethods != nil && c.ClientAuthenticationMethods.PrivateKeyJWT != nil && c.ClientAuthenticationMethods.PrivateKeyJWT.Credentials != nil {
 		var credentials []Credential
+
 		for _, cred := range *c.ClientAuthenticationMethods.PrivateKeyJWT.Credentials {
 			if cred.ID != nil && *cred.ID != "" {
 				credentials = append(credentials, Credential{ID: cred.ID})
 			}
 		}
+
 		c.ClientAuthenticationMethods.PrivateKeyJWT.Credentials = &credentials
 	}
 }
@@ -216,6 +251,9 @@ type ClientJWTConfiguration struct {
 type ClientNativeSocialLogin struct {
 	// Native Social Login support for the Apple connection
 	Apple *ClientNativeSocialLoginSupportEnabled `json:"apple,omitempty"`
+
+	// Native Google Login support for the Google connection Enable Sign in with Google (Android 4.4+) using Credentials Manager
+	Google *ClientNativeSocialLoginSupportEnabled `json:"google,omitempty"`
 
 	// Native Social Login support for the Facebook connection
 	Facebook *ClientNativeSocialLoginSupportEnabled `json:"facebook,omitempty"`
@@ -268,6 +306,18 @@ type ClientRefreshToken struct {
 
 	// Period in seconds after which inactive refresh tokens will expire.
 	IdleTokenLifetime *int `json:"idle_token_lifetime,omitempty"`
+
+	// A collection of policies governing multi-resource refresh token exchange (MRRT), defining how refresh tokens can be used across different resource servers
+	Policies *[]ClientRefreshTokenPolicy `json:"policies,omitempty"`
+}
+
+// ClientRefreshTokenPolicy is used to configure the Refresh Token policies for our Client.
+type ClientRefreshTokenPolicy struct {
+	// The identifier of the resource server to which the Multi Resource Refresh Token Policy applies
+	Audience *string `json:"audience,omitempty"`
+
+	// The resource server permissions granted under the Multi Resource Refresh Token Policy, defining the context in which an access token can be used
+	Scope *[]string `json:"scope,omitempty"`
 }
 
 // Credential is used to configure Client Credentials.
@@ -346,6 +396,16 @@ type OIDCLogout struct {
 type BackChannelLogoutInitiators struct {
 	Mode               *string   `json:"mode,omitempty"`
 	SelectedInitiators *[]string `json:"selected_initiators,omitempty"`
+}
+
+// SessionTransfer Transfer defines the setting to allow Native to Web SSO session transfer.
+type SessionTransfer struct {
+	CanCreateSessionTransferToken *bool     `json:"can_create_session_transfer_token,omitempty"`
+	AllowedAuthenticationMethods  *[]string `json:"allowed_authentication_methods,omitempty"`
+	EnforceDeviceBinding          *string   `json:"enforce_device_binding,omitempty"`
+	AllowRefreshToken             *bool     `json:"allow_refresh_token,omitempty"`
+	EnforceOnlineRefreshTokens    *bool     `json:"enforce_online_refresh_tokens,omitempty"`
+	EnforceCascadeRevocation      *bool     `json:"enforce_cascade_revocation,omitempty"`
 }
 
 // ClientAddons defines the `addons` settings for a Client.
@@ -511,12 +571,16 @@ type SAML2ClientAddon struct {
 	// The mappings between the Auth0 user profile and the output attributes on the SAML Assertion.
 	// Each "name" represents the property name on the Auth0 user profile.
 	// Each "value" is the name (including namespace) for the resulting SAML attribute in the assertion.
-	Mappings *map[string]string `json:"mappings,omitempty"`
+	Mappings *map[string]string `json:"-"`
+	// The mappings between the Auth0 user profile and the output attributes on the SAML Assertion.
+	// Each "name" represents the property name on the Auth0 user profile.
+	// and each "value" can be either a string or a list of strings representing one or more SAML attribute names (including namespaces).
+	FlexibleMappings map[string]interface{} `json:"mappings,omitempty"`
 	// The audience of the SAML Assertion.
 	Audience *string `json:"audience,omitempty"`
 	// The recipient of the SAML Assertion.
 	Recipient *string `json:"recipient,omitempty"`
-	// Whether or not a UPN claim should be created.
+	// Whether a UPN claim should be created.
 	CreateUPNClaim *bool `json:"createUpnClaim,omitempty"`
 	// If `PassthroughClaimsWithNoMapping` is true and this is false, for each claim that is not mapped to the common profile Auth0 will add a prefix
 	// 	http://schema.auth0.com	. If true it will passthrough the claim as-is.
@@ -524,7 +588,7 @@ type SAML2ClientAddon struct {
 	// If true, for each claim that is not mapped to the common profile, Auth0 will passthrough those in the output assertion.
 	// If false, those claims won't be mapped.
 	PassthroughClaimsWithNoMapping *bool `json:"passthroughClaimsWithNoMapping,omitempty"`
-	// If true, it will will add more information in the token like the provider used (google, adfs, ad, etc.) and the access_token if available.
+	// If true, it will add more information in the token like the provider used (google, adfs, ad, etc.) and the access_token if available.
 	MapIdentities *bool `json:"mapIdentities,omitempty"`
 	// Signature algorithm to sign the SAML Assertion or response.
 	SignatureAlgorithm *string `json:"signatureAlgorithm,omitempty"`
@@ -535,7 +599,7 @@ type SAML2ClientAddon struct {
 	Destination *string `json:"destination,omitempty"`
 	// Expiration of the token.
 	LifetimeInSeconds *int `json:"lifetimeInSeconds,omitempty"`
-	// Whether or not the SAML Response should be signed. By default the SAML Assertion will be signed, but not the SAML Response.
+	// Whether the SAML Response should be signed. By default, the SAML Assertion will be signed, but not the SAML Response.
 	// If true, SAML Response will be signed instead of SAML Assertion.
 	SignResponse         *bool   `json:"signResponse,omitempty"`
 	NameIdentifierFormat *string `json:"nameIdentifierFormat,omitempty"`
@@ -557,6 +621,77 @@ type SAML2ClientAddon struct {
 	SigningCert *string `json:"signingCert,omitempty"`
 	//  An object that controls SAML logout behavior.
 	Logout *SAML2ClientAddonLogout `json:"logout,omitempty"`
+}
+
+// UnmarshalJSON allows SAML2ClientAddon to accept both map[string]string and map[string]any
+// for the "mappings" field when decoding JSON.
+func (s *SAML2ClientAddon) UnmarshalJSON(data []byte) error {
+	// Define a temporary struct to extract the mappings field as map[string]any
+	type saml2Alias SAML2ClientAddon
+
+	aux := &struct {
+		Mappings map[string]any `json:"mappings,omitempty"`
+		*saml2Alias
+	}{
+		saml2Alias: (*saml2Alias)(s),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	s.FlexibleMappings = aux.Mappings
+
+	// If all values in mappings are strings, also populate the legacy Mappings field
+	if aux.Mappings != nil && allValuesAreString(aux.Mappings) {
+		m := make(map[string]string, len(aux.Mappings))
+		for k, v := range aux.Mappings {
+			m[k] = v.(string)
+		}
+
+		s.Mappings = &m
+	} else {
+		s.Mappings = nil
+	}
+
+	return nil
+}
+
+// allValuesAreString returns true if all values in the map are strings.
+func allValuesAreString(m map[string]any) bool {
+	for _, v := range m {
+		if _, ok := v.(string); !ok {
+			return false
+		}
+	}
+
+	return true
+}
+
+// MarshalJSON ensures that the "mappings" field is serialized as map[string]any,
+// but if only the legacy Mappings field is set, it will convert it for output.
+func (s *SAML2ClientAddon) MarshalJSON() ([]byte, error) {
+	type saml2Alias SAML2ClientAddon
+
+	aux := &struct {
+		Mappings map[string]any `json:"mappings,omitempty"`
+		*saml2Alias
+	}{
+		saml2Alias: (*saml2Alias)(s),
+		Mappings:   s.FlexibleMappings,
+	}
+
+	// If FlexibleMappings is nil but legacy Mappings is set, convert it for output
+	if aux.Mappings == nil && s.Mappings != nil {
+		m := make(map[string]any, len(*s.Mappings))
+		for k, v := range *s.Mappings {
+			m[k] = v
+		}
+
+		aux.Mappings = m
+	}
+
+	return json.Marshal(aux)
 }
 
 // SAML2ClientAddonLogout defines the `logout` settings for the SAML2Addon.
@@ -663,7 +798,10 @@ func (m *ClientManager) List(ctx context.Context, opts ...RequestOption) (c *Cli
 //
 // See: https://auth0.com/docs/api/management/v2#!/Clients/patch_clients_by_id
 func (m *ClientManager) Update(ctx context.Context, id string, c *Client, opts ...RequestOption) (err error) {
-	c.CleanForPatch()
+	if c != nil {
+		c.CleanForPatch()
+	}
+
 	return m.management.Request(ctx, "PATCH", m.management.URI("clients", id), c, opts...)
 }
 
@@ -729,12 +867,19 @@ func (m *ClientManager) DeleteCredential(ctx context.Context, clientID string, c
 	return m.management.Request(ctx, "DELETE", m.management.URI("clients", clientID, "credentials", credentialID), nil, opts...)
 }
 
+// ReadEnabledConnections returns a list of enabled connections for a client.
+func (m *ClientManager) ReadEnabledConnections(ctx context.Context, clientID string, opts ...RequestOption) (c *ConnectionList, err error) {
+	err = m.management.Request(ctx, "GET", m.management.URI("clients", clientID, "connections"), &c, applyListCheckpointDefaults(opts))
+	return
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface.
 //
 // It is required to handle the json field lifetime_in_seconds, which can either
 // be an int, or a string in older tenants.
 func (jc *ClientJWTConfiguration) UnmarshalJSON(b []byte) error {
 	type clientJWTConfiguration ClientJWTConfiguration
+
 	type clientJWTConfigurationWrapper struct {
 		*clientJWTConfiguration
 		RawLifetimeInSeconds interface{} `json:"lifetime_in_seconds,omitempty"`
@@ -758,6 +903,7 @@ func (jc *ClientJWTConfiguration) UnmarshalJSON(b []byte) error {
 			if err != nil {
 				return unexpectedTypeError
 			}
+
 			jc.LifetimeInSeconds = &value
 		default:
 			return unexpectedTypeError
@@ -770,6 +916,7 @@ func (jc *ClientJWTConfiguration) UnmarshalJSON(b []byte) error {
 // MarshalJSON implements the json.Marshaler interface.
 func (jc *ClientJWTConfiguration) MarshalJSON() ([]byte, error) {
 	type clientJWTConfiguration ClientJWTConfiguration
+
 	type clientJWTConfigurationWrapper struct {
 		*clientJWTConfiguration
 		RawLifetimeInSeconds interface{} `json:"lifetime_in_seconds,omitempty"`

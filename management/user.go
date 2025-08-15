@@ -125,6 +125,7 @@ type User struct {
 // We have to use a custom one due to possible inconsistencies in value types.
 func (u *User) UnmarshalJSON(b []byte) error {
 	type user User
+
 	type userAlias struct {
 		*user
 		RawEmailVerified interface{} `json:"email_verified,omitempty"`
@@ -150,6 +151,7 @@ func (u *User) UnmarshalJSON(b []byte) error {
 		default:
 			panic(reflect.TypeOf(rawEmailVerified))
 		}
+
 		alias.EmailVerified = &emailVerified
 	}
 
@@ -159,6 +161,7 @@ func (u *User) UnmarshalJSON(b []byte) error {
 // MarshalJSON is a custom serializer for the User type.
 func (u *User) MarshalJSON() ([]byte, error) {
 	type user User
+
 	type userAlias struct {
 		*user
 		RawEmailVerified interface{} `json:"email_verified,omitempty"`
@@ -209,6 +212,7 @@ type UserIdentity struct {
 // See https://community.auth0.com/t/users-user-id-returns-inconsistent-type-for-identities-user-id/39236
 func (i *UserIdentity) UnmarshalJSON(b []byte) error {
 	type userIdentity UserIdentity
+
 	type userIdentityAlias struct {
 		*userIdentity
 		RawUserID interface{} `json:"user_id,omitempty"`
@@ -231,6 +235,7 @@ func (i *UserIdentity) UnmarshalJSON(b []byte) error {
 		default:
 			panic(reflect.TypeOf(rawID))
 		}
+
 		alias.UserID = &id
 	}
 
@@ -240,6 +245,7 @@ func (i *UserIdentity) UnmarshalJSON(b []byte) error {
 // MarshalJSON is a custom serializer for the UserIdentity type.
 func (i *UserIdentity) MarshalJSON() ([]byte, error) {
 	type userIdentity UserIdentity
+
 	type userIdentityAlias struct {
 		*userIdentity
 		RawUserID interface{} `json:"user_id,omitempty"`
@@ -436,6 +442,14 @@ type UserSessionAuthenticationMethod struct {
 	Type      *string `json:"type,omitempty"`
 }
 
+// UserRiskAssessmentAssessor is used to clear risk assessment assessors for a user.
+type UserRiskAssessmentAssessor struct {
+	// Connection is the name of the connection containing the user whose assessors should be cleared.
+	Connection *string `json:"connection,omitempty"`
+	// Assessors is a list of assessors to clear.
+	Assessors []string `json:"assessors,omitempty"`
+}
+
 // UserManager manages Auth0 User resources.
 type UserManager manager
 
@@ -525,6 +539,7 @@ func (m *UserManager) Search(ctx context.Context, opts ...RequestOption) (ul *Us
 func (m *UserManager) ListByEmail(ctx context.Context, email string, opts ...RequestOption) (us []*User, err error) {
 	opts = append(opts, Parameter("email", email))
 	err = m.management.Request(ctx, "GET", m.management.URI("users-by-email"), &us, opts...)
+
 	return
 }
 
@@ -544,9 +559,11 @@ func (m *UserManager) Roles(ctx context.Context, id string, opts ...RequestOptio
 func (m *UserManager) AssignRoles(ctx context.Context, id string, roles []*Role, opts ...RequestOption) error {
 	r := make(map[string][]*string)
 	r["roles"] = make([]*string, len(roles))
+
 	for i, role := range roles {
 		r["roles"][i] = role.ID
 	}
+
 	return m.management.Request(ctx, "POST", m.management.URI("users", id, "roles"), &r, opts...)
 }
 
@@ -556,9 +573,11 @@ func (m *UserManager) AssignRoles(ctx context.Context, id string, roles []*Role,
 func (m *UserManager) RemoveRoles(ctx context.Context, id string, roles []*Role, opts ...RequestOption) error {
 	r := make(map[string][]*string)
 	r["roles"] = make([]*string, len(roles))
+
 	for i, role := range roles {
 		r["roles"][i] = role.ID
 	}
+
 	return m.management.Request(ctx, "DELETE", m.management.URI("users", id, "roles"), &r, opts...)
 }
 
@@ -578,6 +597,7 @@ func (m *UserManager) Permissions(ctx context.Context, id string, opts ...Reques
 func (m *UserManager) AssignPermissions(ctx context.Context, id string, permissions []*Permission, opts ...RequestOption) error {
 	p := make(map[string][]*Permission)
 	p["permissions"] = permissions
+
 	return m.management.Request(ctx, "POST", m.management.URI("users", id, "permissions"), &p, opts...)
 }
 
@@ -587,6 +607,7 @@ func (m *UserManager) AssignPermissions(ctx context.Context, id string, permissi
 func (m *UserManager) RemovePermissions(ctx context.Context, id string, permissions []*Permission, opts ...RequestOption) error {
 	p := make(map[string][]*Permission)
 	p["permissions"] = permissions
+
 	return m.management.Request(ctx, "DELETE", m.management.URI("users", id, "permissions"), &p, opts...)
 }
 
@@ -597,6 +618,7 @@ func (m *UserManager) RemovePermissions(ctx context.Context, id string, permissi
 func (m *UserManager) Blocks(ctx context.Context, id string, opts ...RequestOption) ([]*UserBlock, error) {
 	b := new(userBlock)
 	err := m.management.Request(ctx, "GET", m.management.URI("user-blocks", id), &b, opts...)
+
 	return b.BlockedFor, err
 }
 
@@ -606,8 +628,10 @@ func (m *UserManager) Blocks(ctx context.Context, id string, opts ...RequestOpti
 // See: https://auth0.com/docs/api/management/v2#!/User_Blocks/get_user_blocks
 func (m *UserManager) BlocksByIdentifier(ctx context.Context, identifier string, opts ...RequestOption) ([]*UserBlock, error) {
 	b := new(userBlock)
+
 	opts = append(opts, Parameter("identifier", identifier))
 	err := m.management.Request(ctx, "GET", m.management.URI("user-blocks"), &b, opts...)
+
 	return b.BlockedFor, err
 }
 
@@ -646,6 +670,7 @@ func (m *UserManager) Enrollments(ctx context.Context, id string, opts ...Reques
 func (m *UserManager) RegenerateRecoveryCode(ctx context.Context, id string, opts ...RequestOption) (*UserRecoveryCode, error) {
 	r := new(UserRecoveryCode)
 	err := m.management.Request(ctx, "POST", m.management.URI("users", id, "recovery-code-regeneration"), &r, opts...)
+
 	return r, err
 }
 
@@ -661,6 +686,7 @@ func (m *UserManager) InvalidateRememberBrowser(ctx context.Context, id string, 
 		"invalidate-remember-browser",
 	)
 	err := m.management.Request(ctx, "POST", uri, nil, opts...)
+
 	return err
 }
 
@@ -809,4 +835,27 @@ func (m *UserManager) ListUserSessions(ctx context.Context, userID string, opts 
 func (m *UserManager) DeleteUserSessions(ctx context.Context, userID string, opts ...RequestOption) (err error) {
 	err = m.management.Request(ctx, "DELETE", m.management.URI("users", userID, "sessions"), nil, opts...)
 	return
+}
+
+// GetUserLogs retrieves logs for a user.
+//
+// It allows pagination using the provided options. For more information on pagination, refer to:
+// https://pkg.go.dev/github.com/auth0/go-auth0/management#hdr-Page_Based_Pagination
+//
+// For more information on all possible event types, their respective acronyms and descriptions, see Log Event Type Codes.
+//
+// For more information on the list of fields that can be used in sort, see Searchable Fields.
+//
+// Auth0 limits the number of logs you can return by search criteria to 100 logs per request. Furthermore, you may only paginate through up to 1,000 search results. If you exceed this threshold, please redefine your search.
+//
+// See: https://auth0.com/docs/api/management/v2/users/get-logs-by-user
+func (m *UserManager) GetUserLogs(ctx context.Context, userID string, opts ...RequestOption) (r []*Log, err error) {
+	err = m.management.Request(ctx, "GET", m.management.URI("users", userID, "logs"), &r, opts...)
+	return
+}
+
+// ClearRiskAssessmentAssessors clears the risk assessment assessors for a specific user.
+func (m *UserManager) ClearRiskAssessmentAssessors(ctx context.Context, userID string, ua *UserRiskAssessmentAssessor, opts ...RequestOption) error {
+	uri := m.management.URI("users", userID, "risk-assessments", "clear")
+	return m.management.Request(ctx, "POST", uri, &ua, opts...)
 }

@@ -10,11 +10,13 @@ import (
 	"net/http/httptest"
 	"os"
 	"runtime"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/auth0/go-auth0"
 	"github.com/auth0/go-auth0/internal/client"
@@ -44,6 +46,7 @@ func TestMain(m *testing.M) {
 	httpRecordings = os.Getenv("AUTH0_HTTP_RECORDINGS")
 
 	httpRecordingsEnabled = envVarEnabled(httpRecordings)
+
 	initializeTestClient()
 
 	code := m.Run()
@@ -430,6 +433,7 @@ func TestRetries(t *testing.T) {
 				w.WriteHeader(http.StatusTooManyRequests)
 				return
 			}
+
 			w.WriteHeader(http.StatusOK)
 		})
 
@@ -460,6 +464,7 @@ func TestRetries(t *testing.T) {
 				w.WriteHeader(http.StatusBadGateway)
 				return
 			}
+
 			w.WriteHeader(http.StatusOK)
 		})
 
@@ -487,6 +492,7 @@ func TestRetries(t *testing.T) {
 
 		h := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			i++
+
 			w.WriteHeader(http.StatusBadGateway)
 		})
 
@@ -511,6 +517,7 @@ func TestRetries(t *testing.T) {
 
 		h := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			i++
+
 			cancel()
 			w.WriteHeader(http.StatusBadGateway)
 		})
@@ -529,6 +536,61 @@ func TestRetries(t *testing.T) {
 		assert.ErrorIs(t, err, context.Canceled)
 		assert.Equal(t, 1, i) // 1 request should have been made before the context times out
 	})
+
+	t.Run("Retry per request timeout", func(t *testing.T) {
+		var i atomic.Int64
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+
+			c := i.Add(1)
+			t.Log(c)
+
+			if c == 2 {
+				cancel()
+			}
+
+			timer := time.NewTimer(10 * time.Second)
+			select {
+			case <-timer.C:
+				t.Log("completed")
+				w.WriteHeader(http.StatusOK)
+
+				return
+			case <-ctx.Done():
+				t.Log("cancelled")
+				w.WriteHeader(499)
+
+				return
+			}
+		})
+
+		s := httptest.NewServer(h)
+		defer s.Close()
+
+		m, err := New(
+			s.URL,
+			WithInsecure(),
+			WithRetryStrategy(RetryStrategy{
+				MaxRetries: 10,
+				Statuses: []int{
+					http.StatusInternalServerError,
+					http.StatusBadGateway,
+					http.StatusServiceUnavailable,
+					http.StatusGatewayTimeout,
+				},
+				PerAttemptTimeout: 5 * time.Millisecond,
+			}),
+		)
+		assert.NoError(t, err)
+
+		_, err = m.User.Read(ctx, "123")
+		assert.ErrorIs(t, err, context.Canceled)
+		assert.Equal(t, int64(2), i.Load()) // 1 request should have been made before the context times out
+	})
 }
 
 func TestApiCallContextTimeout(t *testing.T) {
@@ -545,4 +607,103 @@ func TestApiCallContextTimeout(t *testing.T) {
 
 	_, err = m.User.Read(ctx, "123")
 	assert.ErrorIs(t, err, context.DeadlineExceeded)
+}
+
+func TestCustomDomainHeader(t *testing.T) {
+	t.Run("Option applies custom domain header", func(t *testing.T) {
+		tests := []struct {
+			name          string
+			inputDomain   string
+			expectedValue string
+		}{
+			{"sets valid custom domain", "my.custom.domain", "my.custom.domain"},
+			{"sets empty custom domain", "", ""},
+			{"sets domain with subdomain", "sub.domain.example.com", "sub.domain.example.com"},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				r, _ := http.NewRequest("GET", "/", nil)
+				CustomDomainHeader(tt.inputDomain).apply(r)
+				got := r.Header.Get("Auth0-Custom-Domain")
+				assert.Equal(t, tt.expectedValue, got)
+			})
+		}
+	})
+
+	t.Run("Middleware applies custom domain header only on whitelisted paths", func(t *testing.T) {
+		globalDomain := "global.custom.domain"
+		whitelistedPath := "/api/v2/users"
+		nonWhitelistedPath := "/api/v2/clients"
+
+		t.Run("applies on whitelisted endpoint", func(t *testing.T) {
+			var actualHeader string
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == whitelistedPath {
+					actualHeader = r.Header.Get("Auth0-Custom-Domain")
+
+					w.Write([]byte(`{"users":[]}`))
+
+					return
+				}
+
+				http.NotFound(w, r)
+			}))
+			defer server.Close()
+
+			m, err := New(
+				server.URL,
+				WithInsecure(),
+				WithCustomDomainHeader(globalDomain),
+			)
+			require.NoError(t, err)
+
+			_, err = m.User.List(context.Background())
+			require.NoError(t, err)
+			assert.Equal(t, globalDomain, actualHeader)
+		})
+
+		t.Run("does not apply on non-whitelisted endpoint", func(t *testing.T) {
+			var actualHeader string
+
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == nonWhitelistedPath {
+					actualHeader = r.Header.Get("Auth0-Custom-Domain")
+
+					w.Write([]byte(`{"clients":[]}`))
+
+					return
+				}
+
+				http.NotFound(w, r)
+			}))
+			defer server.Close()
+
+			m, err := New(
+				server.URL,
+				WithInsecure(),
+				WithCustomDomainHeader(globalDomain),
+			)
+			require.NoError(t, err)
+
+			_, err = m.Client.List(context.Background())
+			require.NoError(t, err)
+			assert.Empty(t, actualHeader, "Header should not be set for non-whitelisted endpoint")
+		})
+	})
+}
+
+func TestApplyCustomDomainHeader_InvalidURI(t *testing.T) {
+	m := &Management{
+		customDomainHeader: "invalid.test.domain",
+	}
+
+	req, _ := http.NewRequest("GET", "/", nil)
+
+	// Pass an invalid URI to trigger the error path
+	m.applyCustomDomainHeader(req, "http://%41:8080/") // %41 is 'A', but in host:port, this is invalid
+
+	// Header should not be set
+	assert.Empty(t, req.Header.Get("Auth0-Custom-Domain"))
 }

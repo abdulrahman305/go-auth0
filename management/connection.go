@@ -138,9 +138,10 @@ type Connection struct {
 	// Options for validation.
 	Options interface{} `json:"-"`
 
-	// The identifiers of the clients for which the connection is to be
-	// enabled. If the array is empty or the property is not specified, no
-	// clients are enabled.
+	// EnabledClients holds the identifiers of clients for which the connection is enabled.
+	//
+	// Deprecated: This field is deprecated and will be removed in future versions.
+	// Use UpdateEnabledClients and ReadEnabledClients methods instead for managing enabled clients.
 	EnabledClients *[]string `json:"enabled_clients,omitempty"`
 
 	// Defines the realms for which the connection will be used (ie: email
@@ -153,8 +154,52 @@ type Connection struct {
 	// Provisioning Ticket URL is Ticket URL for Active Directory/LDAP, etc.
 	ProvisioningTicketURL *string `json:"provisioning_ticket_url,omitempty"`
 
-	// Display connection as a button.
+	// ShowAsButton Display connection as a button.
+	// Enable showing a button for the connection in the login page (new experience only). If false, it will be usable only by HRD. (Defaults to false.)
 	ShowAsButton *bool `json:"show_as_button,omitempty"`
+}
+
+// ConnectionKey is used to fetch public keys for a connection.
+type ConnectionKey struct {
+	// The key ID of the signing key.
+	KID *string `json:"kid,omitempty"`
+	// The public certificate of the signing key.
+	Cert *string `json:"cert,omitempty"`
+	// The public certificate of the signing key in PKCS7 format.
+	PKCS *string `json:"pkcs,omitempty"`
+	// True if the key is the current key.
+	Current *bool `json:"current,omitempty"`
+	// True if the key is the next key.
+	Next *bool `json:"next,omitempty"`
+	// True if the key is the previous key.
+	Previous *bool `json:"previous,omitempty"`
+	// The date and time when the key became the current key.
+	CurrentSince *string `json:"current_since,omitempty"`
+	// The certificate fingerprint.
+	Fingerprint *string `json:"fingerprint,omitempty"`
+	// The certificate thumbprint.
+	Thumbprint *string `json:"thumbprint,omitempty"`
+	// The signing key algorithm.
+	Algorithm *string `json:"algorithm,omitempty"`
+	// The signing key use, whether for encryption or signing.
+	KeyUse *string `json:"key_use,omitempty"`
+	// The subject distinguished name (DN) of the certificate.
+	SubjectDN *string `json:"subject_dn,omitempty"`
+}
+
+// ConnectionEnabledClientList is a list of enabled clients for a connection.
+type ConnectionEnabledClientList struct {
+	List
+	Clients *[]ConnectionEnabledClient `json:"clients,omitempty"`
+}
+
+// ConnectionEnabledClient represents the payload for the clients status for a connection.
+type ConnectionEnabledClient struct {
+	// ClientID is The client_id of the client
+	ClientID *string `json:"client_id,omitempty"`
+
+	// Status indicates if the connection is enabled or not for this client_id
+	Status *bool `json:"status,omitempty"`
 }
 
 // SCIMConfiguration represents the SCIM configuration for a connection.
@@ -255,6 +300,7 @@ func (st *SCIMToken) MarshalJSON() ([]byte, error) {
 // MarshalJSON implements the json.Marshaler interface.
 func (c *Connection) MarshalJSON() ([]byte, error) {
 	type connection Connection
+
 	type connectionWrapper struct {
 		*connection
 		RawOptions json.RawMessage `json:"options,omitempty"`
@@ -267,6 +313,7 @@ func (c *Connection) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		w.RawOptions = b
 	}
 
@@ -276,6 +323,7 @@ func (c *Connection) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (c *Connection) UnmarshalJSON(b []byte) error {
 	type connection Connection
+
 	type connectionWrapper struct {
 		*connection
 		RawOptions json.RawMessage `json:"options,omitempty"`
@@ -443,6 +491,9 @@ type ConnectionOptions struct {
 	//   - Combining `attributes` and `validation` in the same configuration is not allowed.
 	//   - If any identifier is required in the profile, it must be active during signup.
 	Attributes *ConnectionOptionsAttributes `json:"attributes,omitempty"`
+
+	// Set to true to consume feature only when connections_realm_fallback flag is enabled for tenant
+	RealmFallback *bool `json:"realm_fallback,omitempty"`
 }
 
 // ConnectionOptionsAttributes defines the structure for attribute configurations.
@@ -468,6 +519,7 @@ type ConnectionOptionsAttributeSignup struct {
 // MarshalJSON implements the json.Marshaler interface.
 func (c *ConnectionOptionsUsernameAttribute) MarshalJSON() ([]byte, error) {
 	type connectionOptionsUsernameAttribute ConnectionOptionsUsernameAttribute
+
 	alias := &struct {
 		*connectionOptionsUsernameAttribute
 	}{
@@ -580,6 +632,12 @@ type ConnectionOptionsOkta struct {
 
 	ConnectionSettings *ConnectionOptionsOIDCConnectionSettings `json:"connection_settings,omitempty"`
 	AttributeMap       *ConnectionOptionsOIDCAttributeMap       `json:"attribute_map,omitempty"`
+
+	// TokenEndpointAuthMethod specifies the authentication method for the token endpoint.
+	TokenEndpointAuthMethod *string `json:"token_endpoint_auth_method,omitempty"`
+
+	// TokenEndpointAuthSigningAlg specifies the signing algorithm for the token endpoint.
+	TokenEndpointAuthSigningAlg *string `json:"token_endpoint_auth_signing_alg,omitempty"`
 }
 
 // Scopes returns the scopes for ConnectionOptionsOkta.
@@ -593,15 +651,19 @@ func (c *ConnectionOptionsOkta) SetScopes(enable bool, scopes ...string) {
 	for _, scope := range c.Scopes() {
 		scopeMap[scope] = true
 	}
+
 	for _, scope := range scopes {
 		scopeMap[scope] = enable
 	}
+
 	scopeSlice := make([]string, 0, len(scopeMap))
+
 	for scope, enabled := range scopeMap {
 		if enabled {
 			scopeSlice = append(scopeSlice, scope)
 		}
 	}
+
 	sort.Strings(scopeSlice)
 	scope := strings.Join(scopeSlice, " ")
 	c.Scope = &scope
@@ -667,6 +729,7 @@ func (c *ConnectionOptionsGoogleOAuth2) SetScopes(enable bool, scopes ...string)
 // be an array of strings or a single string.
 func (c *ConnectionOptionsGoogleOAuth2) UnmarshalJSON(data []byte) error {
 	type connectionOptionsGoogleOAuth2 ConnectionOptionsGoogleOAuth2
+
 	type connectionOptionsGoogleOAuth2Wrapper struct {
 		*connectionOptionsGoogleOAuth2
 		RawAllowedAudiences interface{} `json:"allowed_audiences,omitempty"`
@@ -701,6 +764,7 @@ func (c *ConnectionOptionsGoogleOAuth2) UnmarshalJSON(data []byte) error {
 // MarshalJSON implements the json.Marshaler interface.
 func (c *ConnectionOptionsGoogleOAuth2) MarshalJSON() ([]byte, error) {
 	type connectionOptionsGoogleOAuth2 ConnectionOptionsGoogleOAuth2
+
 	type connectionOptionsGoogleOAuth2Wrapper struct {
 		*connectionOptionsGoogleOAuth2
 		RawAllowedAudiences interface{} `json:"allowed_audiences,omitempty"`
@@ -1048,6 +1112,12 @@ type ConnectionOptionsOIDC struct {
 
 	ConnectionSettings *ConnectionOptionsOIDCConnectionSettings `json:"connection_settings,omitempty"`
 	AttributeMap       *ConnectionOptionsOIDCAttributeMap       `json:"attribute_map,omitempty"`
+
+	// TokenEndpointAuthMethod specifies the authentication method for the token endpoint.
+	TokenEndpointAuthMethod *string `json:"token_endpoint_auth_method,omitempty"`
+
+	// TokenEndpointAuthSigningAlg specifies the signing algorithm for the token endpoint.
+	TokenEndpointAuthSigningAlg *string `json:"token_endpoint_auth_signing_alg,omitempty"`
 }
 
 // ConnectionOptionsOIDCConnectionSettings contains PKCE configuration for the connection.
@@ -1087,15 +1157,19 @@ func (c *ConnectionOptionsOIDC) SetScopes(enable bool, scopes ...string) {
 	for _, scope := range c.Scopes() {
 		scopeMap[scope] = true
 	}
+
 	for _, scope := range scopes {
 		scopeMap[scope] = enable
 	}
+
 	scopeSlice := make([]string, 0, len(scopeMap))
+
 	for scope, enabled := range scopeMap {
 		if enabled {
 			scopeSlice = append(scopeSlice, scope)
 		}
 	}
+
 	sort.Strings(scopeSlice)
 	scope := strings.Join(scopeSlice, " ")
 	c.Scope = &scope
@@ -1141,6 +1215,9 @@ type ConnectionOptionsOAuth2 struct {
 
 	// UpstreamParams specifies upstream parameters.
 	UpstreamParams map[string]interface{} `json:"upstream_params,omitempty"`
+
+	// CustomHeaders specifies custom headers.
+	CustomHeaders *map[string]string `json:"customHeaders,omitempty"`
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for ConnectionOptionsOAuth2.
@@ -1148,6 +1225,7 @@ type ConnectionOptionsOAuth2 struct {
 // be an array of strings or a single string.
 func (c *ConnectionOptionsOAuth2) UnmarshalJSON(data []byte) error {
 	type connectionOptionsOAuth2 ConnectionOptionsOAuth2
+
 	type connectionOptionsOAuth2Wrapper struct {
 		*connectionOptionsOAuth2
 		RawScope interface{} `json:"scope,omitempty"`
@@ -1167,6 +1245,7 @@ func (c *ConnectionOptionsOAuth2) UnmarshalJSON(data []byte) error {
 			for i, v := range rawScope {
 				scopes[i] = v.(string)
 			}
+
 			c.Scope = auth0.String(strings.Join(scopes, " "))
 		case string:
 			c.Scope = auth0.String(rawScope)
@@ -1181,12 +1260,14 @@ func (c *ConnectionOptionsOAuth2) UnmarshalJSON(data []byte) error {
 // MarshalJSON implements the json.Marshaler interface for ConnectionOptionsOAuth2.
 func (c *ConnectionOptionsOAuth2) MarshalJSON() ([]byte, error) {
 	type connectionOptionsOAuth2 ConnectionOptionsOAuth2
+
 	type connectionOptionsOAuth2Wrapper struct {
 		*connectionOptionsOAuth2
 		RawScope interface{} `json:"scope,omitempty"`
 	}
 
 	alias := &connectionOptionsOAuth2Wrapper{(*connectionOptionsOAuth2)(c), nil}
+
 	if c.Scope != nil {
 		scopes := strings.Fields(*c.Scope)
 		alias.RawScope = scopes
@@ -1206,15 +1287,19 @@ func (c *ConnectionOptionsOAuth2) SetScopes(enable bool, scopes ...string) {
 	for _, scope := range c.Scopes() {
 		scopeMap[scope] = true
 	}
+
 	for _, scope := range scopes {
 		scopeMap[scope] = enable
 	}
+
 	scopeSlice := make([]string, 0, len(scopeMap))
+
 	for scope, enabled := range scopeMap {
 		if enabled {
 			scopeSlice = append(scopeSlice, scope)
 		}
 	}
+
 	sort.Strings(scopeSlice)
 	scope := strings.Join(scopeSlice, " ")
 	c.Scope = &scope
@@ -1424,7 +1509,9 @@ type ConnectionOptionsSAML struct {
 	SetUserAttributes  *string   `json:"set_user_root_attributes,omitempty"`
 	NonPersistentAttrs *[]string `json:"non_persistent_attrs,omitempty"`
 
-	UpstreamParams map[string]interface{} `json:"upstream_params,omitempty"`
+	UpstreamParams              map[string]interface{} `json:"upstream_params,omitempty"`
+	GlobalTokenRevocationJWTIss *string                `json:"global_token_revocation_jwt_iss,omitempty"`
+	GlobalTokenRevocationJWTSub *string                `json:"global_token_revocation_jwt_sub,omitempty"`
 }
 
 // ConnectionOptionsSAMLIdpInitiated is used to configure the
@@ -1555,14 +1642,32 @@ func (m *ConnectionManager) ReadByName(ctx context.Context, name string, opts ..
 	if name == "" {
 		return nil, &managementError{400, "Bad Request", "Name cannot be empty"}
 	}
+
 	c, err := m.List(ctx, append(opts, Parameter("name", name))...)
 	if err != nil {
 		return nil, err
 	}
+
 	if len(c.Connections) > 0 {
 		return c.Connections[0], nil
 	}
+
 	return nil, &managementError{404, "Not Found", "Connection not found"}
+}
+
+// ReadEnabledClients  retrieves the enabled clients for a connection by its connection ID.
+//
+// See: https://auth0.com/docs/api/management/v2/connections/get-connection-clients
+func (m *ConnectionManager) ReadEnabledClients(ctx context.Context, id string, opts ...RequestOption) (c *ConnectionEnabledClientList, err error) {
+	err = m.management.Request(ctx, "GET", m.management.URI("connections", id, "clients"), &c, opts...)
+	return
+}
+
+// UpdateEnabledClients updates the enabled clients for a connection by its connection ID.
+//
+// See: https://auth0.com/docs/api/management/v2/connections/patch-clients
+func (m *ConnectionManager) UpdateEnabledClients(ctx context.Context, id string, c []ConnectionEnabledClient, opts ...RequestOption) error {
+	return m.management.Request(ctx, "PATCH", m.management.URI("connections", id, "clients"), c, opts...)
 }
 
 // CreateSCIMConfiguration creates a SCIM configuration for a connection by its connection ID.
@@ -1647,5 +1752,23 @@ func (m *ConnectionManager) ListSCIMToken(ctx context.Context, id string, opts .
 // See: https://auth0.com/docs/api/management/v2/connections/delete-scim-token
 func (m *ConnectionManager) DeleteSCIMToken(ctx context.Context, id, tokenID string, opts ...RequestOption) (err error) {
 	err = m.management.Request(ctx, "DELETE", m.management.URI("connections", id, "scim-configuration", "tokens", tokenID), nil, opts...)
+	return
+}
+
+// ReadKeys returns the set of the connection’s public keys used to verify JWT signatures.
+// This method only works with enterprise connections.
+//
+// See: https://auth0.com/docs/api/management/v2/connections/get-connection-keys
+func (m *ConnectionManager) ReadKeys(ctx context.Context, id string, opts ...RequestOption) (keys []*ConnectionKey, err error) {
+	err = m.management.Request(ctx, "GET", m.management.URI("connections", id, "keys"), &keys, opts...)
+	return
+}
+
+// RotateKeys rotates the connection's public key used to verify signatures on signed JWTs.
+// This method only works with enterprise connections.
+//
+// See: https://auth0.com/docs/api/management/v2/connections/rotate-connection-keys
+func (m *ConnectionManager) RotateKeys(ctx context.Context, id string, opts ...RequestOption) (key *ConnectionKey, err error) {
+	err = m.management.Request(ctx, "POST", m.management.URI("connections", id, "keys", "rotate"), &key, opts...)
 	return
 }

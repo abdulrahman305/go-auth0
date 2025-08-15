@@ -42,10 +42,29 @@ func TestTenantManager(t *testing.T) {
 		Sessions: &TenantSessions{
 			OIDCLogoutPromptEnabled: auth0.Bool(false),
 		},
+		OIDCLogout: &TenantOIDCLogout{
+			OIDCResourceProviderLogoutEndSessionEndpointDiscovery: auth0.Bool(true),
+		},
 		ACRValuesSupported:                   &[]string{"foo", "bar"},
 		PushedAuthorizationRequestsSupported: auth0.Bool(true),
 		MTLS: &TenantMTLSConfiguration{
 			EnableEndpointAliases: auth0.Bool(true),
+		},
+		DefaultTokenQuota: &TenantDefaultTokenQuota{
+			Clients: &TokenQuota{
+				&TokenQuotaClientCredentials{
+					Enforce: auth0.Bool(true),
+					PerDay:  auth0.Int(100),
+					PerHour: auth0.Int(10),
+				},
+			},
+			Organizations: &TokenQuota{
+				&TokenQuotaClientCredentials{
+					Enforce: auth0.Bool(true),
+					PerDay:  auth0.Int(100),
+					PerHour: auth0.Int(10),
+				},
+			},
 		},
 	}
 	err = api.Tenant.Update(context.Background(), newTenantSettings)
@@ -67,6 +86,9 @@ func TestTenantManager(t *testing.T) {
 	assert.Equal(t, newTenantSettings.GetACRValuesSupported(), actualTenantSettings.GetACRValuesSupported())
 	assert.Equal(t, newTenantSettings.GetPushedAuthorizationRequestsSupported(), actualTenantSettings.GetPushedAuthorizationRequestsSupported())
 	assert.Equal(t, newTenantSettings.GetMTLS().GetEnableEndpointAliases(), actualTenantSettings.GetMTLS().GetEnableEndpointAliases())
+	assert.Equal(t, newTenantSettings.GetOIDCLogout().GetOIDCResourceProviderLogoutEndSessionEndpointDiscovery(), actualTenantSettings.GetOIDCLogout().GetOIDCResourceProviderLogoutEndSessionEndpointDiscovery())
+	assert.Equal(t, newTenantSettings.GetDefaultTokenQuota().GetClients().GetClientCredentials(), actualTenantSettings.GetDefaultTokenQuota().GetClients().GetClientCredentials())
+	assert.Equal(t, newTenantSettings.GetDefaultTokenQuota().GetOrganizations().GetClientCredentials(), actualTenantSettings.GetDefaultTokenQuota().GetOrganizations().GetClientCredentials())
 
 	// If ACRValuesSupported and MTLS is not Passed Should not change the values.
 	updatedNewTenant := &Tenant{
@@ -108,10 +130,27 @@ func TestTenantManager_NullableFields(t *testing.T) {
 		err := api.Tenant.Update(context.Background(), initialSettings)
 		require.NoError(t, err)
 	})
+
 	newTenantSettings := &Tenant{
 		ACRValuesSupported: &[]string{"foo", "bar"},
 		MTLS: &TenantMTLSConfiguration{
 			EnableEndpointAliases: auth0.Bool(true),
+		},
+		DefaultTokenQuota: &TenantDefaultTokenQuota{
+			Clients: &TokenQuota{
+				&TokenQuotaClientCredentials{
+					Enforce: auth0.Bool(true),
+					PerDay:  auth0.Int(100),
+					PerHour: auth0.Int(10),
+				},
+			},
+			Organizations: &TokenQuota{
+				&TokenQuotaClientCredentials{
+					Enforce: auth0.Bool(true),
+					PerDay:  auth0.Int(100),
+					PerHour: auth0.Int(10),
+				},
+			},
 		},
 	}
 	err = api.Tenant.Update(context.Background(), newTenantSettings)
@@ -120,6 +159,8 @@ func TestTenantManager_NullableFields(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, newTenantSettings.GetACRValuesSupported(), actualTenantSettings.GetACRValuesSupported())
 	assert.Equal(t, newTenantSettings.GetMTLS().GetEnableEndpointAliases(), actualTenantSettings.GetMTLS().GetEnableEndpointAliases())
+	assert.Equal(t, newTenantSettings.GetDefaultTokenQuota().GetClients().GetClientCredentials(), actualTenantSettings.GetDefaultTokenQuota().GetClients().GetClientCredentials())
+	assert.Equal(t, newTenantSettings.GetDefaultTokenQuota().GetOrganizations().GetClientCredentials(), actualTenantSettings.GetDefaultTokenQuota().GetOrganizations().GetClientCredentials())
 
 	// Set empty array values for ACRValuesSupported
 	emptyACRValuesSupported := &Tenant{
@@ -135,10 +176,13 @@ func TestTenantManager_NullableFields(t *testing.T) {
 	type CustomTenant struct {
 		ACRValuesSupported *[]string                `json:"acr_values_supported"`
 		MTLS               *TenantMTLSConfiguration `json:"mtls"`
+		DefaultTokenQuota  *TenantDefaultTokenQuota `json:"default_token_quota"`
 	}
+
 	nullableTenantSettings := &CustomTenant{
 		ACRValuesSupported: nil,
 		MTLS:               nil,
+		DefaultTokenQuota:  nil,
 	}
 	err = api.Request(context.Background(), http.MethodPatch, api.URI("tenants", "settings"), nullableTenantSettings)
 	assert.NoError(t, err)
@@ -146,6 +190,7 @@ func TestTenantManager_NullableFields(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, actualTenantSettings.GetACRValuesSupported())
 	assert.Nil(t, actualTenantSettings.GetMTLS())
+	assert.Nil(t, actualTenantSettings.GetDefaultTokenQuota())
 }
 
 func TestTenant_MarshalJSON(t *testing.T) {

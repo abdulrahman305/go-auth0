@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -42,6 +43,10 @@ var connectionTestCases = []connectionTestCase{
 				"screen_name": map[string]interface{}{
 					"alias": "login_hint",
 				},
+			},
+			CustomHeaders: &map[string]string{
+				"X-Auth0-Client":        "my-client",
+				"X-Auth0-Client-Secret": "my-secret",
 			},
 		},
 	},
@@ -187,8 +192,10 @@ var connectionTestCases = []connectionTestCase{
 			Strategy: auth0.String("samlp"),
 		},
 		options: &ConnectionOptionsSAML{
-			StrategyVersion: auth0.Int(2),
-			SignInEndpoint:  auth0.String("https://saml.identity/provider"),
+			GlobalTokenRevocationJWTSub: auth0.String("user123"),
+			GlobalTokenRevocationJWTIss: auth0.String("issuer.example.com"),
+			StrategyVersion:             auth0.Int(2),
+			SignInEndpoint:              auth0.String("https://saml.identity/provider"),
 			SigningCert: auth0.String(`-----BEGIN CERTIFICATE-----
 MIID6TCCA1ICAQEwDQYJKoZIhvcNAQEFBQAwgYsxCzAJBgNVBAYTAlVTMRMwEQYD
 VQQIEwpDYWxpZm9ybmlhMRYwFAYDVQQHEw1TYW4gRnJhbmNpc2NvMRQwEgYDVQQK
@@ -829,6 +836,7 @@ func TestConnectionManager_Read(t *testing.T) {
 			assert.Equal(t, expectedConnection.GetName(), actualConnection.GetName())
 			assert.Equal(t, expectedConnection.GetStrategy(), actualConnection.GetStrategy())
 			assert.IsType(t, testCase.options, actualConnection.Options)
+
 			switch testCase.connection.GetStrategy() {
 			case "ad", "adfs", "auth0", "samlp", "waad", "windowslive", "wordpress":
 				assert.ObjectsAreEqualValues(getStrategyVersion(testCase.connection.GetStrategy(), testCase.options), getStrategyVersion(actualConnection.GetStrategy(), actualConnection.Options))
@@ -867,6 +875,49 @@ func TestConnectionManager_ReadByName(t *testing.T) {
 
 		assert.EqualError(t, err, "400 Bad Request: Name cannot be empty")
 		assert.Empty(t, actualConnection)
+	})
+}
+
+func TestConnectionManager_EnabledClients(t *testing.T) {
+	configureHTTPTestRecordings(t)
+
+	client := givenAClient(t)
+
+	connection := givenAConnection(t, connectionTestCase{
+		connection: Connection{
+			Name:     auth0.Stringf("Test-Auth0-Connection-%d", time.Now().UnixNano()),
+			Strategy: auth0.String("auth0"),
+		},
+	})
+
+	t.Run("add client to connection", func(t *testing.T) {
+		payload := []ConnectionEnabledClient{
+			{
+				ClientID: client.ClientID,
+				Status:   auth0.Bool(true),
+			},
+		}
+
+		err := api.Connection.UpdateEnabledClients(context.Background(), connection.GetID(), payload)
+		assert.NoError(t, err)
+
+		clientIDs := getEnabledClientIDs(t, connection.GetID())
+		assert.Contains(t, clientIDs, client.GetClientID(), "client should be enabled")
+	})
+
+	t.Run("remove client from connection", func(t *testing.T) {
+		payload := []ConnectionEnabledClient{
+			{
+				ClientID: client.ClientID,
+				Status:   auth0.Bool(false),
+			},
+		}
+
+		err := api.Connection.UpdateEnabledClients(context.Background(), connection.GetID(), payload)
+		assert.NoError(t, err)
+
+		clientIDs := getEnabledClientIDs(t, connection.GetID())
+		assert.NotContains(t, clientIDs, client.GetClientID(), "client should be removed")
 	})
 }
 
@@ -1173,6 +1224,132 @@ func TestConnectionManager_DeleteSCIMToken(t *testing.T) {
 		cleanupSCIMConfig(t, expectedConnection.GetID())
 	})
 }
+
+func TestConnectionManager_ReadKeys(t *testing.T) {
+	configureHTTPTestRecordings(t)
+
+	tests := []struct {
+		name     string
+		strategy string
+		options  interface{}
+	}{
+		{
+			name:     "OIDC Connection",
+			strategy: "oidc",
+			options: &ConnectionOptionsOIDC{
+				ClientID:              auth0.String("4ef8d976-71bd-4473-a7ce-087d3f0fafd8"),
+				Scope:                 auth0.String("openid"),
+				Issuer:                auth0.String("https://example.com"),
+				AuthorizationEndpoint: auth0.String("https://example.com"),
+				JWKSURI:               auth0.String("https://example.com/jwks"),
+				Type:                  auth0.String("front_channel"),
+				DiscoveryURL:          auth0.String("https://www.paypalobjects.com/.well-known/openid-configuration"),
+				UpstreamParams: map[string]interface{}{
+					"screen_name": map[string]interface{}{
+						"alias": "login_hint",
+					},
+				},
+				TokenEndpointAuthMethod:     auth0.String("private_key_jwt"),
+				TokenEndpointAuthSigningAlg: auth0.String("RS256"),
+			},
+		},
+		{
+			name:     "Okta Connection",
+			strategy: "okta",
+			options: &ConnectionOptionsOkta{
+				ClientID:              auth0.String("4ef8d976-71bd-4473-a7ce-087d3f0fafd8"),
+				ClientSecret:          auth0.String("mySecret"),
+				Scope:                 auth0.String("openid"),
+				Domain:                auth0.String("domain.okta.com"),
+				Issuer:                auth0.String("https://example.com"),
+				AuthorizationEndpoint: auth0.String("https://example.com"),
+				JWKSURI:               auth0.String("https://example.com/jwks"),
+				UpstreamParams: map[string]interface{}{
+					"screen_name": map[string]interface{}{
+						"alias": "login_hint",
+					},
+				},
+				TokenEndpointAuthMethod:     auth0.String("private_key_jwt"),
+				TokenEndpointAuthSigningAlg: auth0.String("RS256"),
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			conn := givenAConnection(t, connectionTestCase{
+				connection: Connection{
+					Name:     auth0.Stringf("Test-%s-Connection-%d", strings.ToUpper(tc.strategy), time.Now().Unix()),
+					Strategy: auth0.String(tc.strategy),
+				},
+				options: tc.options,
+			})
+
+			keys, err := api.Connection.ReadKeys(context.Background(), conn.GetID())
+			assert.NoError(t, err)
+			assert.NotEmpty(t, keys)
+		})
+	}
+}
+
+func TestConnectionManager_RotateKeys(t *testing.T) {
+	configureHTTPTestRecordings(t)
+
+	conn := givenAConnection(t, connectionTestCase{
+		connection: Connection{
+			Name:     auth0.Stringf("Test-Connection-Rotate-Keys-%d", time.Now().Unix()),
+			Strategy: auth0.String("oidc"),
+		},
+		options: &ConnectionOptionsOIDC{
+			ClientID:              auth0.String("4ef8d976-71bd-4473-a7ce-087d3f0fafd8"),
+			Scope:                 auth0.String("openid"),
+			Issuer:                auth0.String("https://example.com"),
+			AuthorizationEndpoint: auth0.String("https://example.com"),
+			JWKSURI:               auth0.String("https://example.com/jwks"),
+			Type:                  auth0.String("front_channel"),
+			DiscoveryURL:          auth0.String("https://www.paypalobjects.com/.well-known/openid-configuration"),
+			UpstreamParams: map[string]interface{}{
+				"screen_name": map[string]interface{}{
+					"alias": "login_hint",
+				},
+			},
+			TokenEndpointAuthMethod:     auth0.String("private_key_jwt"),
+			TokenEndpointAuthSigningAlg: auth0.String("RS256"),
+		},
+	})
+
+	ctx := context.Background()
+
+	beforeKeys, err := api.Connection.ReadKeys(ctx, conn.GetID())
+	assert.NoError(t, err)
+	assert.NotEmpty(t, beforeKeys)
+
+	rotatedKey, err := api.Connection.RotateKeys(ctx, conn.GetID())
+	assert.NoError(t, err)
+	assert.NotNil(t, rotatedKey)
+
+	afterKeys, err := api.Connection.ReadKeys(ctx, conn.GetID())
+	assert.NoError(t, err)
+	assert.NotEmpty(t, afterKeys)
+
+	foundRotated := false
+
+	for _, k := range afterKeys {
+		if k.GetKID() == rotatedKey.GetKID() {
+			foundRotated = true
+			break
+		}
+	}
+
+	assert.True(t, foundRotated, "Rotated key should be present in afterKeys")
+
+	assert.NotEqual(t, len(beforeKeys), len(afterKeys), "Keys should be different after rotation")
+
+	t.Cleanup(func() {
+		cleanupConnection(t, conn.GetID())
+	})
+}
+
 func TestConnectionOptionsUsernameAttribute_MarshalJSON(t *testing.T) {
 	for attribute, expected := range map[*ConnectionOptionsUsernameAttribute]string{
 		{
@@ -1314,6 +1491,7 @@ func givenASCIMConfiguration(t *testing.T, connectionID string) *SCIMConfigurati
 
 func givenAOktaConnection(t *testing.T) *Connection {
 	t.Helper()
+
 	return givenAConnection(t, connectionTestCase{
 		connection: Connection{
 			Name:     auth0.Stringf("Test-Okta-Connection-%d", time.Now().Unix()),
@@ -1355,4 +1533,19 @@ func getStrategyVersion(strategy string, options interface{}) int {
 	default:
 		return -1
 	}
+}
+
+func getEnabledClientIDs(t *testing.T, connectionID string) []string {
+	t.Helper()
+
+	resp, err := api.Connection.ReadEnabledClients(context.Background(), connectionID)
+	assert.NoError(t, err, "failed to read enabled clients")
+	assert.NotNil(t, resp.GetClients(), "clients list should not be nil")
+
+	var clientIDs []string
+	for _, c := range resp.GetClients() {
+		clientIDs = append(clientIDs, c.GetClientID())
+	}
+
+	return clientIDs
 }

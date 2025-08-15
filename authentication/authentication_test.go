@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -236,6 +237,7 @@ func TestAuth0Client(t *testing.T) {
 			assert.Equal(t, runtime.Version(), auth0Client.Env["go"])
 		})
 		s := httptest.NewTLSServer(h)
+
 		t.Cleanup(func() {
 			s.Close()
 		})
@@ -259,6 +261,7 @@ func TestAuth0Client(t *testing.T) {
 			assert.Empty(t, rawHeader)
 		})
 		s := httptest.NewTLSServer(h)
+
 		t.Cleanup(func() {
 			s.Close()
 		})
@@ -292,6 +295,7 @@ func TestAuth0Client(t *testing.T) {
 			assert.Equal(t, "bar", auth0Client.Env["foo"])
 		})
 		s := httptest.NewTLSServer(h)
+
 		t.Cleanup(func() {
 			s.Close()
 		})
@@ -314,6 +318,7 @@ func TestAuth0Client(t *testing.T) {
 			assert.Equal(t, "", header)
 		})
 		s := httptest.NewTLSServer(h)
+
 		t.Cleanup(func() {
 			s.Close()
 		})
@@ -343,6 +348,7 @@ func TestRetries(t *testing.T) {
 				w.WriteHeader(http.StatusTooManyRequests)
 				return
 			}
+
 			w.WriteHeader(http.StatusOK)
 		})
 
@@ -375,6 +381,7 @@ func TestRetries(t *testing.T) {
 				w.WriteHeader(http.StatusBadGateway)
 				return
 			}
+
 			w.WriteHeader(http.StatusOK)
 		})
 
@@ -404,6 +411,7 @@ func TestRetries(t *testing.T) {
 
 		h := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			i++
+
 			w.WriteHeader(http.StatusBadGateway)
 		})
 
@@ -430,6 +438,7 @@ func TestRetries(t *testing.T) {
 
 		h := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			i++
+
 			cancel()
 			w.WriteHeader(http.StatusBadGateway)
 		})
@@ -450,6 +459,95 @@ func TestRetries(t *testing.T) {
 		assert.ErrorIs(t, err, context.Canceled)
 		assert.Equal(t, 1, i) // 1 request should have been made before the context times out
 	})
+
+	t.Run("Retry strategy", func(t *testing.T) {
+		i := 0
+		ctx, cancel := context.WithCancel(context.Background())
+
+		h := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			i++
+
+			cancel()
+			w.WriteHeader(http.StatusBadGateway)
+		})
+
+		s := httptest.NewTLSServer(h)
+		defer s.Close()
+
+		a, err := New(
+			context.Background(),
+			s.URL,
+			WithIDTokenSigningAlg("HS256"),
+			WithClient(s.Client()),
+			WithRetryStrategy(RetryStrategy{
+				MaxRetries:        3,
+				Statuses:          []int{http.StatusBadGateway},
+				PerAttemptTimeout: time.Second,
+			}),
+		)
+		assert.NoError(t, err)
+
+		_, err = a.UserInfo(ctx, "123")
+		assert.ErrorIs(t, err, context.Canceled)
+		assert.Equal(t, 1, i) // 1 request should have been made before the context times out
+	})
+
+	t.Run("Retry per request timeout", func(t *testing.T) {
+		var i atomic.Int64
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+
+			c := i.Add(1)
+			t.Log(c)
+
+			if c == 2 {
+				cancel()
+			}
+
+			timer := time.NewTimer(10 * time.Second)
+			select {
+			case <-timer.C:
+				t.Log("completed")
+				w.WriteHeader(http.StatusOK)
+
+				return
+			case <-ctx.Done():
+				t.Log("cancelled")
+				w.WriteHeader(499)
+
+				return
+			}
+		})
+
+		s := httptest.NewTLSServer(h)
+		defer s.Close()
+
+		m, err := New(
+			context.Background(),
+			s.URL,
+			WithIDTokenSigningAlg("HS256"),
+			WithClient(s.Client()),
+			WithRetryStrategy(RetryStrategy{
+				MaxRetries: 10,
+				Statuses: []int{
+					http.StatusInternalServerError,
+					http.StatusBadGateway,
+					http.StatusServiceUnavailable,
+					http.StatusGatewayTimeout,
+				},
+				PerAttemptTimeout: 5 * time.Millisecond,
+			}),
+		)
+		assert.NoError(t, err)
+
+		_, err = m.UserInfo(ctx, "123")
+		assert.ErrorIs(t, err, context.Canceled)
+		assert.Equal(t, int64(2), i.Load()) // 1 request should have been made before the context times out
+	})
 }
 
 func TestWithClockTolerance(t *testing.T) {
@@ -457,6 +555,7 @@ func TestWithClockTolerance(t *testing.T) {
 	idTokenClientID := "test-client-id"
 
 	var idToken string
+
 	h := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		tokenSet := &oauth.TokenSet{
 			AccessToken: "test-access-token",
@@ -470,18 +569,22 @@ func TestWithClockTolerance(t *testing.T) {
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+
 		w.WriteHeader(http.StatusOK)
+
 		if _, err := fmt.Fprint(w, string(b)); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 	})
 	s := httptest.NewTLSServer(h)
+
 	t.Cleanup(func() {
 		s.Close()
 	})
 
 	URL, err := url.Parse(s.URL)
 	require.NoError(t, err)
+
 	builder := jwt.NewBuilder().
 		Issuer(s.URL + "/").
 		Subject("me").
@@ -494,6 +597,7 @@ func TestWithClockTolerance(t *testing.T) {
 
 	b, err := jwt.Sign(token, jwt.WithKey(jwa.HS256, []byte(idTokenClientSecret)))
 	require.NoError(t, err)
+
 	idToken = string(b)
 
 	api, err := New(

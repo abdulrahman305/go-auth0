@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/auth0/go-auth0/authentication/ciba"
+	"github.com/auth0/go-auth0/internal/client"
 
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwt"
@@ -38,7 +39,7 @@ func TestLoginWithGrant(t *testing.T) {
 			},
 			BindingMessage: "TEST-BINDING-MESSAGE",
 		})
-
+		assert.Empty(t, err)
 		token, err := authAPI.OAuth.LoginWithGrant(context.Background(),
 			"urn:openid:params:grant-type:ciba",
 			url.Values{
@@ -286,7 +287,7 @@ func TestLoginWithClientCredentials(t *testing.T) {
 		skipE2E(t)
 		configureHTTPTestRecordings(t, authAPI)
 
-		auth, err := createClientAssertion("RS256", jwtPrivateKey, clientID, "https://"+domain+"/")
+		auth, err := client.CreateClientAssertion("RS256", jwtPrivateKey, clientID, "https://"+domain+"/")
 		require.NoError(t, err)
 
 		tokenSet, err := authAPI.OAuth.LoginWithClientCredentials(context.Background(), oauth.LoginWithClientCredentialsRequest{
@@ -317,7 +318,7 @@ func TestLoginWithClientCredentials(t *testing.T) {
 			Audience: "test-audience",
 		}, oauth.IDTokenValidationOptions{})
 
-		assert.ErrorContains(t, err, "Unsupported client assertion algorithm \"invalid-alg\" provided")
+		assert.ErrorContains(t, err, "unsupported client assertion algorithm \"invalid-alg\"")
 	})
 
 	t.Run("Should support passing an organization", func(t *testing.T) {
@@ -477,7 +478,7 @@ func TestPushedAuthorizationRequest(t *testing.T) {
 		)
 		require.NoError(t, err)
 		_, err = auth.OAuth.PushedAuthorization(context.Background(), oauth.PushedAuthorizationRequest{})
-		assert.ErrorContains(t, err, "Missing required fields: ClientID, ResponseType, RedirectURI")
+		assert.ErrorContains(t, err, "missing required fields: ClientID, ResponseType, RedirectURI")
 	})
 
 	t.Run("Should make a PAR request", func(t *testing.T) {
@@ -533,6 +534,7 @@ func withIDToken(t *testing.T, extras map[string]interface{}) (*Authentication, 
 	idTokenClientid := "test-client-id"
 
 	var idToken string
+
 	h := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		tokenSet := &oauth.TokenSet{
 			AccessToken: "test-access-token",
@@ -546,12 +548,15 @@ func withIDToken(t *testing.T, extras map[string]interface{}) (*Authentication, 
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
+
 		w.WriteHeader(http.StatusOK)
+
 		if _, err := fmt.Fprint(w, string(b)); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 	})
 	s := httptest.NewTLSServer(h)
+
 	t.Cleanup(func() {
 		s.Close()
 	})

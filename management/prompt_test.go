@@ -57,6 +57,7 @@ func TestPromptCustomText(t *testing.T) {
 	configureHTTPTestRecordings(t)
 
 	const prompt = "login"
+
 	const lang = "en"
 
 	t.Cleanup(func() {
@@ -132,15 +133,48 @@ func TestPromptManager_ReadRendering(t *testing.T) {
 
 	_ = givenACustomDomain(t)
 	_ = givenAUniversalLoginTemplate(t)
-	expected := givenAPromptRendering(t, RenderingModeAdvanced)
+
+	client := givenAClient(t)
+	expected := givenAPromptRendering(t, RenderingModeAdvanced, client.GetClientID())
 	actual, err := api.Prompt.ReadRendering(context.Background(), PromptSignup, ScreenSignup)
 	assert.NoError(t, err)
 	assert.Equal(t, expected.GetRenderingMode(), actual.GetRenderingMode())
 	assert.Equal(t, expected.GetContextConfiguration(), actual.GetContextConfiguration())
 	assert.Equal(t, expected.GetDefaultHeadTagsDisabled(), actual.GetDefaultHeadTagsDisabled())
+	assert.Equal(t, expected.GetFilters(), actual.GetFilters())
+	assert.Equal(t, expected.GetUsePageTemplate(), actual.GetUsePageTemplate())
 	assert.Equal(t, expected.HeadTags, actual.HeadTags)
 	assert.Equal(t, PromptSignup, *actual.GetPrompt())
 	assert.Equal(t, ScreenSignup, *actual.GetScreen())
+}
+
+func TestPromptManager_ListRendering(t *testing.T) {
+	configureHTTPTestRecordings(t)
+	_ = givenACustomDomain(t)
+	_ = givenAUniversalLoginTemplate(t)
+	client := givenAClient(t)
+	expected := givenAPromptRendering(t, RenderingModeAdvanced, client.GetClientID())
+
+	actual, err := api.Prompt.ListRendering(context.Background())
+	assert.NoError(t, err)
+
+	found := false
+
+	for _, r := range actual.PromptRenderings {
+		if r.RenderingMode != nil && expected.RenderingMode != nil &&
+			*r.GetRenderingMode() == *expected.GetRenderingMode() &&
+			assert.Equal(t, expected.GetContextConfiguration(), r.GetContextConfiguration()) &&
+			assert.Equal(t, expected.GetDefaultHeadTagsDisabled(), r.GetDefaultHeadTagsDisabled()) &&
+			assert.Equal(t, expected.GetFilters(), r.GetFilters()) &&
+			assert.Equal(t, expected.GetUsePageTemplate(), r.GetUsePageTemplate()) &&
+			assert.Equal(t, expected.HeadTags, r.HeadTags) {
+			found = true
+			break
+		}
+	}
+
+	assert.True(t, found, "expected PromptRendering not found in actual.PromptRendering")
+	assert.Greater(t, len(actual.PromptRenderings), 0)
 }
 
 // Able to update the renderingMode to advanced and the setting configs when parsing the advanced renderingMode in payload.
@@ -149,12 +183,25 @@ func TestPromptManager_UpdateRenderingWithAdvancedMode(t *testing.T) {
 
 	_ = givenACustomDomain(t)
 	_ = givenAUniversalLoginTemplate(t)
-	_ = givenAPromptRendering(t, RenderingModeStandard)
+	client := givenAClient(t)
+	_ = givenAPromptRendering(t, RenderingModeAdvanced, client.GetClientID())
 
 	updateData := &PromptRendering{
 		RenderingMode:           &RenderingModeAdvanced,
 		ContextConfiguration:    &[]string{"branding.settings", "branding.themes.default", "client.logo_uri"},
 		DefaultHeadTagsDisabled: auth0.Bool(true),
+		Filters: &PromptRenderingFilters{
+			MatchType: auth0.String("excludes_any"),
+			Clients: &[]PromptRenderingFilter{
+				{
+					ID: auth0.String(client.GetClientID()),
+					Metadata: &map[string]interface{}{
+						"key2": "value2",
+					},
+				},
+			},
+		},
+		UsePageTemplate: auth0.Bool(false),
 	}
 
 	err := api.Prompt.UpdateRendering(context.Background(), PromptSignup, ScreenSignup, updateData)
@@ -164,6 +211,8 @@ func TestPromptManager_UpdateRenderingWithAdvancedMode(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, updateData.GetContextConfiguration(), actual.GetContextConfiguration())
 	assert.Equal(t, updateData.GetDefaultHeadTagsDisabled(), actual.GetDefaultHeadTagsDisabled())
+	assert.Equal(t, updateData.GetFilters(), actual.GetFilters())
+	assert.Equal(t, updateData.GetUsePageTemplate(), actual.GetUsePageTemplate())
 	assert.Equal(t, PromptSignup, *actual.GetPrompt())
 	assert.Equal(t, ScreenSignup, *actual.GetScreen())
 }
@@ -174,12 +223,25 @@ func TestPromptManager_UpdateRenderingWithStandardMode(t *testing.T) {
 
 	_ = givenACustomDomain(t)
 	_ = givenAUniversalLoginTemplate(t)
-	expected := givenAPromptRendering(t, RenderingModeAdvanced)
+	client := givenAClient(t)
+	expected := givenAPromptRendering(t, RenderingModeAdvanced, client.GetClientID())
 
 	updateData := &PromptRendering{
 		RenderingMode:           &RenderingModeStandard,
 		ContextConfiguration:    &[]string{"branding.settings", "branding.themes.default", "client.logo_uri"},
 		DefaultHeadTagsDisabled: auth0.Bool(true),
+		Filters: &PromptRenderingFilters{
+			MatchType: auth0.String("excludes_any"),
+			Clients: &[]PromptRenderingFilter{
+				{
+					ID: auth0.String(client.GetClientID()),
+					Metadata: &map[string]interface{}{
+						"key2": "value2",
+					},
+				},
+			},
+		},
+		UsePageTemplate: auth0.Bool(false),
 	}
 
 	err := api.Prompt.UpdateRendering(context.Background(), PromptSignup, ScreenSignup, updateData)
@@ -191,6 +253,8 @@ func TestPromptManager_UpdateRenderingWithStandardMode(t *testing.T) {
 	assert.Equal(t, updateData.GetRenderingMode(), actual.GetRenderingMode())
 	assert.NotEqual(t, updateData.GetContextConfiguration(), actual.GetContextConfiguration())
 	assert.NotEqual(t, updateData.GetDefaultHeadTagsDisabled(), actual.GetDefaultHeadTagsDisabled())
+	assert.NotEqual(t, updateData.GetFilters(), actual.GetFilters())
+	assert.NotEqual(t, updateData.GetUsePageTemplate(), actual.GetUsePageTemplate())
 	assert.Equal(t, expected.HeadTags, actual.HeadTags)
 	assert.Equal(t, PromptSignup, *actual.GetPrompt())
 	assert.Equal(t, ScreenSignup, *actual.GetScreen())
@@ -202,11 +266,24 @@ func TestPromptManager_UpdateRendering(t *testing.T) {
 
 	_ = givenACustomDomain(t)
 	_ = givenAUniversalLoginTemplate(t)
-	_ = givenAPromptRendering(t, RenderingModeStandard)
+	client := givenAClient(t)
+	_ = givenAPromptRendering(t, RenderingModeAdvanced, client.GetClientID())
 
 	updateData := &PromptRendering{
 		ContextConfiguration:    &[]string{"branding.settings", "branding.themes.default", "client.logo_uri"},
 		DefaultHeadTagsDisabled: auth0.Bool(true),
+		Filters: &PromptRenderingFilters{
+			MatchType: auth0.String("excludes_any"),
+			Clients: &[]PromptRenderingFilter{
+				{
+					ID: auth0.String(client.GetClientID()),
+					Metadata: &map[string]interface{}{
+						"key2": "value2",
+					},
+				},
+			},
+		},
+		UsePageTemplate: auth0.Bool(false),
 	}
 
 	err := api.Prompt.UpdateRendering(context.Background(), PromptSignup, ScreenSignup, updateData)
@@ -216,6 +293,8 @@ func TestPromptManager_UpdateRendering(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, updateData.GetContextConfiguration(), actual.GetContextConfiguration())
 	assert.Equal(t, updateData.GetDefaultHeadTagsDisabled(), actual.GetDefaultHeadTagsDisabled())
+	assert.Equal(t, updateData.GetFilters(), actual.GetFilters())
+	assert.Equal(t, updateData.GetUsePageTemplate(), actual.GetUsePageTemplate())
 	assert.Equal(t, PromptSignup, *actual.GetPrompt())
 	assert.Equal(t, ScreenSignup, *actual.GetScreen())
 }
@@ -386,7 +465,7 @@ func givenAPartialPrompt(t *testing.T, prompt PromptType) *PromptScreenPartials 
 	return partials
 }
 
-func givenAPromptRendering(t *testing.T, mode RenderingMode) *PromptRendering {
+func givenAPromptRendering(t *testing.T, mode RenderingMode, clientID string) *PromptRendering {
 	t.Helper()
 
 	settings := &PromptRendering{
@@ -407,6 +486,18 @@ func givenAPromptRendering(t *testing.T, mode RenderingMode) *PromptRendering {
 				},
 			},
 		},
+		Filters: &PromptRenderingFilters{
+			MatchType: auth0.String("includes_any"),
+			Clients: &[]PromptRenderingFilter{
+				{
+					ID: auth0.String(clientID),
+					Metadata: &map[string]interface{}{
+						"key1": "value1",
+					},
+				},
+			},
+		},
+		UsePageTemplate: auth0.Bool(true),
 	}
 
 	err := api.Prompt.UpdateRendering(context.Background(), PromptSignup, ScreenSignup, settings)

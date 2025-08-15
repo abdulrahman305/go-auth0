@@ -316,6 +316,15 @@ func TestUserManager_DeleteUserSessions(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestUserManager_GetUserLogs(t *testing.T) {
+	configureHTTPTestRecordings(t)
+
+	user := givenAUser(t)
+	logs, err := api.User.GetUserLogs(context.Background(), user.GetID())
+	assert.NoError(t, err)
+	assert.Len(t, logs, 0)
+}
+
 func TestUser_MarshalJSON(t *testing.T) {
 	for user, expected := range map[*User]string{
 		{}:                                 `{}`,
@@ -553,6 +562,18 @@ func TestUserManager_DeleteRefreshTokens(t *testing.T) {
 	assert.Empty(t, tokensAfterDeletion.Next)
 }
 
+func TestUserManager_ClearRiskAssessmentAssessors(t *testing.T) {
+	configureHTTPTestRecordings(t)
+	user := givenAUser(t)
+	Assessor := &UserRiskAssessmentAssessor{
+		Connection: auth0.String("Username-Password-Authentication"),
+		Assessors:  []string{"new-device"},
+	}
+
+	err := api.User.ClearRiskAssessmentAssessors(context.Background(), user.GetID(), Assessor)
+
+	require.NoError(t, err)
+}
 func givenAUser(t *testing.T) *User {
 	t.Helper()
 
@@ -598,10 +619,12 @@ func givenAUser(t *testing.T) *User {
 // It does not create new refresh tokens but rather retrieves existing ones.
 func retrieveRefreshTokens(t *testing.T) *RefreshTokenList {
 	t.Helper()
+
 	user := &User{ID: auth0.String("UserID")}
 
 	tokens, err := api.User.ListRefreshTokens(context.Background(), user.GetID())
 	require.NoError(t, err)
+
 	return tokens
 }
 
