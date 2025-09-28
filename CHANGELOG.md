@@ -1,5 +1,22 @@
 # Change Log
 
+## [v1.28.0](https://github.com/auth0/go-auth0/tree/v1.28.0) (2025-09-09)
+[Full Changelog](https://github.com/auth0/go-auth0/compare/v1.27.0...v1.28.0)
+
+**Added**
+- feat: Events - Support for Test, Delivery, Redelivery and Stats [\#580](https://github.com/auth0/go-auth0/pull/580) ([duedares-rvj](https://github.com/duedares-rvj))
+- feat: add Token Vault support, `ResourceServerIdentifier` to Client, and `ClientID` to ResourceServer [\#593](https://github.com/auth0/go-auth0/pull/593) ([developerkunal](https://github.com/developerkunal))
+
+## [v1.27.0](https://github.com/auth0/go-auth0/tree/v1.27.0) (2025-08-29)
+[Full Changelog](https://github.com/auth0/go-auth0/compare/v1.26.0...v1.27.0)
+
+**Added**
+- feat: add `SubjectType` and `AuthorizationDetailsTypes` to ClientGrant & implement `SubjectTypeAuthorization` for ResourceServer [\#586](https://github.com/auth0/go-auth0/pull/586) ([developerkunal](https://github.com/developerkunal))
+- chore(email): expand EmailTemplate options with new templates [\#590](https://github.com/auth0/go-auth0/pull/590) ([developerkunal](https://github.com/developerkunal))
+
+**Fixed**
+- fix: skip nil RequestOptions to prevent nil pointer dereferences on `option.apply(r)` [\#591](https://github.com/auth0/go-auth0/pull/591) ([esotuvaka](https://github.com/esotuvaka))
+
 ## [v1.26.0](https://github.com/auth0/go-auth0/tree/v1.26.0) (2025-08-11)
 [Full Changelog](https://github.com/auth0/go-auth0/compare/v1.25.0...v1.26.0)
 
