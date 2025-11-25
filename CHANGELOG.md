@@ -1,5 +1,23 @@
 # Change Log
 
+## [v2.2.0](https://github.com/auth0/go-auth0/tree/v2.2.0) (2025-11-19)
+[Full Changelog](https://github.com/auth0/go-auth0/compare/v2.1.0...v2.2.0)
+
+**Added**
+- SDK Update: Connection Profiles, Express Configuration, and API Enhancements [\#653](https://github.com/auth0/go-auth0/pull/653) ([fern-api[bot]](https://github.com/apps/fern-api))
+
+## [v2.1.0](https://github.com/auth0/go-auth0/tree/v2.1.0) (2025-11-04)
+[Full Changelog](https://github.com/auth0/go-auth0/compare/v2.0.2...v2.1.0)
+
+**Added**
+- feat: Add Bot Detection, CAPTCHA, Organization Discovery Domains, and other Management API updates [\#645](https://github.com/auth0/go-auth0/pull/645) ([fern-api[bot]](https://github.com/apps/fern-api))
+
+## [v2.0.2](https://github.com/auth0/go-auth0/tree/v2.0.2) (2025-10-29)
+[Full Changelog](https://github.com/auth0/go-auth0/compare/v2.0.1...v2.0.2)
+
+**Fixed**
+- fix: correct OAuth token URL construction for all credential options [\#641](https://github.com/auth0/go-auth0/pull/641) ([developerkunal](https://github.com/developerkunal))
+
 ## [v2.0.1](https://github.com/auth0/go-auth0/tree/v2.0.1) (2025-10-13)
 [Full Changelog](https://github.com/auth0/go-auth0/compare/v2.0.0...v2.0.1)
 
